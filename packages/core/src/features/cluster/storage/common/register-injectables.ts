@@ -7,6 +7,7 @@
  */
 
 import addClusterInjectable from "./add.injectable";
+import clusterGroupNamesInjectable from "./cluster-group-names.injectable";
 import clustersInjectable from "./clusters.injectable";
 import getClusterByIdInjectable from "./get-by-id.injectable";
 import clustersStateInjectable from "./state.injectable";
@@ -17,6 +18,11 @@ import type { DiContainerForInjection } from "@ogre-tools/injectable";
 export function registerInjectables(di: DiContainerForInjection): void {
   try {
     di.register(addClusterInjectable);
+  } catch (e) {
+    /* Ignore duplicate registration */
+  }
+  try {
+    di.register(clusterGroupNamesInjectable);
   } catch (e) {
     /* Ignore duplicate registration */
   }
