@@ -1,4 +1,4 @@
-# Freelens v2 Routing Modernization (Phase 2 scoping)
+# IMS Scope v2 Routing Modernization (Phase 2 scoping)
 
 Status: scoping. Tracking issue
 [#2261](https://github.com/freelensapp/freelens/issues/2261); part of the
@@ -99,7 +99,7 @@ excluded):
 | `mobx-observable-history` | ~15 files via `observableHistoryInjectionToken` | Observable location wrapper; must be replaced regardless of (a)/(b). |
 
 Note the `<Switch>` matches in `features/preferences/**` and
-`renderer/components/switch/**` are Freelens' **own** UI `Switch` toggle
+`renderer/components/switch/**` are IMS Scope's **own** UI `Switch` toggle
 component, not the react-router `Switch`. Only `tab-layout.tsx` uses the
 react-router `Switch`.
 
@@ -167,8 +167,8 @@ Each is its own PR to keep history bisectable:
    `react-router-dom` (and `@types/*`) were removed from `core`, `extensions`,
    and `utilities`, dropping the transitive `history` v4. The last
    `react-router` type usage (`RouteProps` in `utilities/src/buildUrl.ts`) was
-   inlined. **Extension-facing:** the `Freelens.ReactRouter` /
-   `Freelens.ReactRouterDom` bundle re-exports were removed — extensions that
+   inlined. **Extension-facing:** the `IMSScope.ReactRouter` /
+   `IMSScope.ReactRouterDom` bundle re-exports were removed — extensions that
    need react-router must now bundle their own copy.
 6. **Verify** — smoke-test cluster views, drawers, breadcrumbs/back-forward,
    deep links, and extension-registered routes; confirm the extension-facing

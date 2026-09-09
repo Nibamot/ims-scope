@@ -1,4 +1,4 @@
-# Freelens v2 Routing Modernization — Playwright MCP smoke-test scenario
+# IMS Scope v2 Routing Modernization — Playwright MCP smoke-test scenario
 
 Status: verification. Tracking issue
 [#2261](https://github.com/freelensapp/freelens/issues/2261); part of the
@@ -14,7 +14,7 @@ tasks of Phase 2 (see `docs/v2-routing-modernization.md` §5, step 6):
 
 All of `react-router` / `react-router-dom` / `mobx-observable-history` /
 `history` v4 and the external `path-to-regexp` are now gone; navigation runs
-entirely on the in-house pieces in `@freelensapp/routing`
+entirely on the in-house pieces in `@nibamot/routing`
 (`Link`/`NavLink`, `Route`/`Switch`/`Redirect`, `matchPath`, the observable
 history wrapper, and the vendored `path-to-regexp` v1 engine). These flows are
 not fully covered by unit tests, so this scenario drives the **running app**
@@ -28,20 +28,20 @@ too.
 
 ## 1. Why Playwright MCP (frame-awareness)
 
-Freelens renders each connected cluster in a **cross-origin**
-`<clusterId>.renderer.freelens.app` iframe. A top-document-only CDP client can
+IMS Scope renders each connected cluster in a **cross-origin**
+`<clusterId>.renderer.ims-scope.app` iframe. A top-document-only CDP client can
 drive the welcome/catalog shell but is **blind** to everything inside a cluster
 (sidebar, resource lists, drawers). Playwright traverses cross-origin frames and
 reaches the cluster views, so it is the right tool for this scenario — the same
-reason the existing `freelens/integration` Playwright suite operates on a
+reason the existing `ims-scope/integration` Playwright suite operates on a
 `Frame`, not just the `Page`. See the "Inspecting the running dev app from an AI
 agent" section of [`DEVELOPMENT.md`](../DEVELOPMENT.md) for the rationale.
 
 Throughout this document:
 
-- **top page** = the catalog/welcome shell (`https://renderer.freelens.app`).
+- **top page** = the catalog/welcome shell (`https://renderer.ims-scope.app`).
 - **cluster frame** = the per-cluster iframe
-  (`#cluster-frame-<entityId>` → `…renderer.freelens.app/…`). Sidebar clicks,
+  (`#cluster-frame-<entityId>` → `…renderer.ims-scope.app/…`). Sidebar clicks,
   resource lists, and drawers live **here**, not on the top page.
 
 ## 2. Prerequisites
@@ -73,7 +73,7 @@ Playwright via `_electron.launch`, exactly as the integration suite does.
 ## 3. Selector reference
 
 Stable hooks used by the scenarios below (all verified in the current tree; the
-same ones the `freelens/integration` suite relies on):
+same ones the `ims-scope/integration` suite relies on):
 
 | Purpose | Selector | Where |
 | --- | --- | --- |
@@ -91,7 +91,7 @@ same ones the `freelens/integration` suite relies on):
 > click directly on the anchor — `frame.dispatchEvent(selector, "click")` —
 > rather than a hit-tested `frame.click`, because the cluster-overview metrics
 > area transiently overlays the click point right after connect. This is the
-> `clickSidebarItem` helper in `freelens/integration/helpers/utils.ts`; reuse it.
+> `clickSidebarItem` helper in `ims-scope/integration/helpers/utils.ts`; reuse it.
 >
 > **`to=""` note:** under the in-house `Link`, an empty `to` resolves against
 > the live observable-history location (e.g. `/workloads`), whereas
@@ -143,7 +143,7 @@ Exercises: the internal route registry (`matchingRouteInjectable` +
    this is `NavLink`'s `isActive` running through the in-house `matchPath`.
 
 **Expected:** every page in the `scenarios` list of
-`freelens/integration/__tests__/cluster-pages.tests.ts` reaches its
+`ims-scope/integration/__tests__/cluster-pages.tests.ts` reaches its
 `expectedSelector`, and exactly the current item shows the active class.
 
 ### C. Drawers (cluster required)
@@ -211,7 +211,7 @@ highest-risk detail of the whole migration (routing-modernization doc §4).
 Exercises: `PageRegistration` (`globalPages` / `clusterPages`) rendering through
 the internal registry, and `navigateToRoute` / `getExtensionPageParameters`.
 
-> The bundled `@freelensapp/example-extension` is not yet migrated to v2, so the
+> The bundled `@nibamot/example-extension` is not yet migrated to v2, so the
 > `extensions.tests.ts` install flow is currently `describe.skip`. Run this
 > scenario with any v2-compatible extension that registers a page; if none is
 > available, record it as **blocked (no v2 extension)** rather than passed.
@@ -231,13 +231,13 @@ unchanged by dropping react-router.
 ### G. Extension-facing routing API (regression note)
 
 The one **intended** extension-facing break in Phase 2 is the removal of the
-`Freelens.ReactRouter` / `Freelens.ReactRouterDom` bundle re-exports (step 5).
+`IMSScope.ReactRouter` / `IMSScope.ReactRouterDom` bundle re-exports (step 5).
 This is not a bug to smoke-test but a documented breaking change:
 
 - Confirm no first-party code imports `Common.ReactRouter*` /
   `Renderer.ReactRouter*`.
 - An extension that previously did `import { Link } from "react-router-dom"` via
-  the Freelens bundle must now bundle its own `react-router` **or** use the
+  the IMS Scope bundle must now bundle its own `react-router` **or** use the
   internal navigation API. Verify the migration note is present in
   `docs/v2-extension-migration.md` and `docs/v2-routing-modernization.md`
   §2.1 / §5.5.
@@ -263,7 +263,7 @@ documentation/compatibility confirmation, not a runtime check.
 ## 6. Relationship to the existing integration suite
 
 Scenarios **A**, **B**, **C**, and **F** overlap the Playwright specs already in
-`freelens/integration/__tests__` (`cluster-pages`, `command-palette`,
+`ims-scope/integration/__tests__` (`cluster-pages`, `command-palette`,
 `app-preferences`, `extensions`). Those run headless in CI when a kind cluster
 is present (`describeIf(kindReady(...))`). This document is the **manual /
 agent-driven** counterpart that additionally covers the flows the automated

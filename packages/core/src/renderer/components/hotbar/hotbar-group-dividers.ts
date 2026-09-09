@@ -14,15 +14,18 @@ export interface HotbarGroupableItem {
  * cells, `null` otherwise. Cells are never reordered — this only reflects
  * the manual order already chosen by the user via drag-and-drop.
  */
+const normalizeGroup = (group: string | undefined): string | undefined => group?.trim().toLowerCase() || undefined;
+
 export function computeGroupDividers(items: readonly (HotbarGroupableItem | undefined)[]): (string | null)[] {
-  let lastGroup: string | undefined;
+  let lastNormalizedGroup: string | undefined;
 
   return items.map((item) => {
     const group = item?.group;
-    const divider = group && group !== lastGroup ? group : null;
+    const normalizedGroup = normalizeGroup(group);
+    const divider = normalizedGroup && normalizedGroup !== lastNormalizedGroup ? group : null;
 
-    lastGroup = group;
+    lastNormalizedGroup = normalizedGroup;
 
-    return divider;
+    return divider ?? null;
   });
 }

@@ -29,7 +29,7 @@ import type { NormalizedPlatform } from "../../common/vars/normalized-platform.i
 import type { DownloadBinary, DownloadProgress } from "../fetch/download-binary.injectable";
 import type { GetKubectlChecksum } from "./kubectl-checksums.injectable";
 
-const initScriptVersionString = "# freelens-initscript v3";
+const initScriptVersionString = "# ims-scope-initscript v3";
 
 /**
  * How long the download may go without receiving a single byte before it is

@@ -1,6 +1,6 @@
-# Migrating extensions to Freelens v2
+# Migrating extensions to IMS Scope v2
 
-Freelens v2 breaks compatibility with the v1 extension API on purpose (see
+IMS Scope v2 breaks compatibility with the v1 extension API on purpose (see
 [`docs/v2-plan.md`](./v2-plan.md), decisions D2/D5). This guide is for authors
 of third-party extensions moving from v1 to v2. It is written against the
 runtime-global extension API introduced in Phase 4 and is expected to be
@@ -75,7 +75,7 @@ runtime.
 
 ## React version (host-provided, must match majors)
 
-Freelens v2 ships **React 19**. React is **host-provided**: the running app
+IMS Scope v2 ships **React 19**. React is **host-provided**: the running app
 injects a single React instance and re-exports it to extensions through the
 extension API (`Renderer.React` / `Renderer.ReactDOM`). Extensions must render
 through that shared instance.
@@ -100,7 +100,7 @@ through that shared instance.
 
 ## `@ogre-tools/*` 23 (dependency-injection major)
 
-Freelens v2 bumps the `@ogre-tools/*` dependency-injection packages
+IMS Scope v2 bumps the `@ogre-tools/*` dependency-injection packages
 (`injectable`, `injectable-react`, …) from **17 to 23**. This is
 extension-facing because the `@ogre-tools/*` types leak through the
 `@nibamot/*` packages and the extension API (injection tokens, `getInjectable`,
@@ -164,7 +164,7 @@ does, plus `fetch`.
 
 **In main, prefer `Main.Util.fetch` over `globalThis.fetch`.** The global exists
 there, but it knows nothing about the user's `httpsProxy` preference, their
-`caCertificates` / `allowUntrustedCAs` settings, or the Freelens proxy. The
+`caCertificates` / `allowUntrustedCAs` settings, or the IMS Scope proxy. The
 host-provided client honours all three, so an extension that uses it works in
 the corporate-proxy and custom-CA setups where the global would simply fail —
 without the extension having to implement any of it.
@@ -268,13 +268,13 @@ can be applied at all.
 
 ## Routing: `react-router` re-exports removed
 
-Freelens v2 dropped `react-router` 5, `react-router-dom` 5, and `history` v4
+IMS Scope v2 dropped `react-router` 5, `react-router-dom` 5, and `history` v4
 from the host (Phase 2 routing modernization, #2261 — `react-router` 5 is
 unmaintained and blocked the React 19 upgrade). Navigation now runs on the
 in-house pieces in `@nibamot/routing`. **This is an intended, extension-
 facing breaking change:** the `Common.ReactRouter` / `Renderer.ReactRouterDom`
 bundle re-exports no longer exist, so `import { Link } from "react-router-dom"`
-via the Freelens bundle will fail to resolve at runtime.
+via the IMS Scope bundle will fail to resolve at runtime.
 
 If your extension used them, migrate one of two ways:
 
@@ -302,7 +302,7 @@ in (`Header`, `accessor`, `sortType`, `disableSortBy`, `width`) were
 `react-table` column objects.
 
 `react-table` 7.8.0 was last released in 2022-05, the repository moved on to
-TanStack, and its peer range stops at React 18 — Freelens v2 runs React 19. It
+TanStack, and its peer range stops at React 18 — IMS Scope v2 runs React 19. It
 had exactly one consumer in the host (the installed-extensions screen), which
 now uses an internal table, so keeping the dependency alive only to keep this
 one re-export would have frozen an unmaintained package into the v2 extension
@@ -325,7 +325,7 @@ rows are Kubernetes objects.
 
 ## Chart.js v4 (`Renderer.Component.BarChart` / `PieChart`)
 
-Freelens bundles Chart.js **v4** (previously v2.9). The `BarChart` and
+IMS Scope bundles Chart.js **v4** (previously v2.9). The `BarChart` and
 `PieChart` components re-exported from `Renderer.Component` are thin wrappers
 around Chart.js, so their `options` prop is a Chart.js **v4** `ChartOptions`
 object. If your extension passes a chart `options` object shaped for the old
@@ -562,7 +562,7 @@ is still lighter than wiring up a Tailwind build.
       shared fetch types are structural now, so `const r: Response = await
       fetch(...)` no longer compiles.
 - [ ] Replace any `react-router` / `react-router-dom` usage imported via the
-      Freelens bundle — the `ReactRouter*` re-exports were removed (see
+      IMS Scope bundle — the `ReactRouter*` re-exports were removed (see
       [Routing: `react-router` re-exports removed](#routing-react-router-re-exports-removed)).
 - [ ] Replace any `Renderer.Component.List` usage with your own table — it was
       removed along with the `react-table` dependency behind it (see
