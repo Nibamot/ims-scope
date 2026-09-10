@@ -67,7 +67,7 @@ function setTypeModule(pkg) {
   return rebuilt;
 }
 
-const targets = [join(repoRoot, "freelens", "package.json"), ...findPackageJsons(join(repoRoot, "packages"))];
+const targets = [join(repoRoot, "ims-scope", "package.json"), ...findPackageJsons(join(repoRoot, "packages"))];
 
 const changed = [];
 
