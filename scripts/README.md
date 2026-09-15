@@ -76,8 +76,8 @@ node scripts/migrate-feature-files.mjs
 Some files require manual migration:
 
 1. **Main/Renderer entry points:**
-   - `freelens/src/main/index.ts`
-   - `freelens/src/renderer/index.ts`
+   - `ims-scope/src/main/index.ts`
+   - `ims-scope/src/renderer/index.ts`
 
 2. **Core package registration:**
    - `packages/core/src/main/register-lens-core.ts`
