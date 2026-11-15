@@ -1686,7 +1686,22 @@ exports[`cluster/namespaces - edit namespace from new tab > when navigating to n
               <div
                 class="notice"
               >
-                Resource not found
+                <div
+                  class="flex gap-4 items-center"
+                >
+                  <span
+                    class="flex-grow"
+                  >
+                    Loading resource failed: some-error-missing-namespace
+                  </span>
+                  <button
+                    class="Button"
+                    data-testid="retry-edit-resource-from-tab-for-some-first-tab-id"
+                    type="button"
+                  >
+                    Retry
+                  </button>
+                </div>
               </div>
             </div>
           </div>
