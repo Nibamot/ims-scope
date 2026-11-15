@@ -890,12 +890,47 @@ metadata:
 
             it("shows error message", () => {
               expect(rendered.getByTestId("dock-tab-content-for-some-first-tab-id")).toHaveTextContent(
-                "Resource not found",
+                "Loading resource failed: some-error-missing-namespace",
               );
             });
 
             it("shows error notification", () => {
               expect(showErrorNotificationMock).toHaveBeenCalled();
+            });
+
+            describe("when retrying", () => {
+              beforeEach(() => {
+                apiKubeGetMock.mockClear();
+                fireEvent.click(rendered.getByTestId("retry-edit-resource-from-tab-for-some-first-tab-id"));
+              });
+
+              it("calls for the namespace again", () => {
+                expect(apiKubeGetMock).toHaveBeenCalledWith("/api/some-api-version/namespaces/some-uid");
+              });
+
+              it("shows the spinner while it loads", () => {
+                expect(rendered.getByTestId("edit-resource-tab-spinner")).toBeInTheDocument();
+              });
+
+              describe("when the call now resolves with the namespace", () => {
+                beforeEach(async () => {
+                  await apiKubeGetMock.resolve({
+                    apiVersion: "some-api-version",
+                    kind: "Namespace",
+                    metadata: {
+                      uid: "some-uid",
+                      name: "some-name",
+                      resourceVersion: "some-resource-version",
+                    },
+                  });
+                });
+
+                it("shows the editor with the namespace", () => {
+                  const input = rendered.getByTestId("monaco-editor-for-some-first-tab-id") as HTMLTextAreaElement;
+
+                  expect(input.value).toContain("name: some-name");
+                });
+              });
             });
           });
         });

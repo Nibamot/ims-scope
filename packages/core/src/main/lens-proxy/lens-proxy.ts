@@ -5,10 +5,11 @@
  */
 
 import assert from "node:assert";
-import https from "node:https";
+import http2 from "node:http2";
 import net from "node:net";
 import { apiKubePrefix, apiPrefix } from "../../common/vars";
 import { getBoolean } from "../utils/parse-query";
+import { adaptUpstreamResponseForHttp2, normalizeHttp2Request } from "./http2-compat";
 import type http from "node:http";
 
 import type { Logger } from "@nibamot/logger";
@@ -74,22 +75,44 @@ const disallowedPorts = new Set([
 const closeGracePeriodMs = 500;
 
 export class LensProxy {
-  protected readonly proxyServer: https.Server;
+  protected readonly proxyServer: http2.Http2SecureServer;
   protected closed = false;
   protected readonly retryCounters = new Map<string, number>();
+  /**
+   * Every open client connection, so that `close` can destroy the ones still
+   * busy once the grace period is up. `Http2SecureServer` has no
+   * `closeAllConnections` of its own.
+   */
+  protected readonly connections = new Set<net.Socket>();
 
   constructor(private readonly dependencies: Dependencies) {
     this.configureProxy(dependencies.proxy);
 
-    this.proxyServer = https.createServer(
+    /**
+     * HTTP/2, so that Chromium multiplexes a cluster frame's requests over one
+     * connection instead of capping them at six per host, which long-lived
+     * watches would otherwise exhaust (see `./http2-compat`). `allowHTTP1`
+     * keeps HTTP/1.1 working for clients that do not negotiate h2, and for
+     * WebSocket upgrades, which Chromium still opens over HTTP/1.1.
+     */
+    this.proxyServer = http2.createSecureServer(
       {
         key: dependencies.certificate.private,
         cert: dependencies.certificate.cert,
+        allowHTTP1: true,
       },
       (req, res) => {
-        this.handleRequest(req as ServerIncomingMessage, res);
+        normalizeHttp2Request(req);
+        // The HTTP/2 compatibility API mirrors the HTTP/1 request/response
+        // surface the router and http-proxy use.
+        this.handleRequest(req as unknown as ServerIncomingMessage, res as unknown as http.ServerResponse);
       },
     );
+
+    this.proxyServer.on("connection", (socket: net.Socket) => {
+      this.connections.add(socket);
+      socket.once("close", () => this.connections.delete(socket));
+    });
 
     this.proxyServer.on("upgrade", (req: ServerIncomingMessage, socket: net.Socket, head: Buffer) => {
       /**
@@ -207,20 +230,24 @@ export class LensProxy {
        * finally call back.
        */
       const destroyRemaining = setTimeout(() => {
-        this.proxyServer.closeAllConnections();
+        for (const socket of this.connections) {
+          socket.destroy();
+        }
       }, closeGracePeriodMs);
 
+      // `close` itself ends connections that are already idle: HTTP/2
+      // sessions with no open stream, and keep-alive HTTP/1.1 connections.
       this.proxyServer.close(() => {
         clearTimeout(destroyRemaining);
         resolve();
       });
-
-      this.proxyServer.closeIdleConnections();
     });
   }
 
   protected configureProxy(proxy: httpProxy): httpProxy {
     proxy.on("proxyRes", (proxyRes, req, res) => {
+      adaptUpstreamResponseForHttp2(req, proxyRes);
+
       const retryCounterId = this.getRequestId(req);
 
       if (this.retryCounters.has(retryCounterId)) {

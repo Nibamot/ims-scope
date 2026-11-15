@@ -8,6 +8,7 @@ import assert from "node:assert";
 import path from "node:path";
 import { getInjectable } from "@ogre-tools/injectable";
 import httpProxy from "http-proxy-node16";
+import { adaptUpstreamResponseForHttp2 } from "../../lens-proxy/http2-compat";
 
 import type { LensApiRequest, RouteResponse } from "../../router/route";
 
@@ -23,6 +24,10 @@ const devStaticFileRouteHandlerInjectable = getInjectable({
   instantiate: () => {
     const proxy = httpProxy.createProxy();
     const proxyTarget = `http://127.0.0.1:${devServerPort}`;
+
+    // The lens proxy serves HTTP/2, which cannot carry the connection-specific
+    // headers the Vite dev server answers with.
+    proxy.on("proxyRes", (proxyRes, req) => adaptUpstreamResponseForHttp2(req, proxyRes));
 
     return async ({ raw: { req, res }, params }: LensApiRequest<"/{path*}">): Promise<RouteResponse<Buffer>> => {
       // Vite's own namespaces (/@vite/client, /@react-refresh, /@fs/, /@id/)
