@@ -13,6 +13,7 @@ import * as yaml from "js-yaml";
 import { action, computed, observable, runInAction } from "mobx";
 import { createPatch, type Operation } from "rfc6902";
 import { defaultYamlDumpOptions } from "../../../../../common/kube-helpers";
+import { getErrorMessage } from "../../../../../common/utils/get-error-message";
 import editResourceTabStoreInjectable from "../store.injectable";
 import requestKubeResourceInjectable from "./request-kube-resource.injectable";
 import requestPatchKubeResourceInjectable from "./request-patch-kube-resource.injectable";
@@ -37,7 +38,9 @@ const editResourceModelInjectable = getInjectable({
       showErrorNotification: di.inject(showErrorNotificationInjectable),
       store,
       tabId,
-      waitForEditingResource: () => waitUntilDefined(() => store.getData(tabId)),
+      // Bounded so a tab whose data never arrives fails (and can be retried)
+      // instead of showing a spinner forever.
+      waitForEditingResource: () => waitUntilDefined(() => store.getData(tabId), { timeout: 30_000 }),
     });
 
     await model.load();
@@ -360,20 +363,54 @@ export class EditResourceModel {
       }
     });
   };
+  /**
+   * Why the last load failed, if it did, so the view can offer a retry. The
+   * model is a keyed singleton per tab and the tab is reused whenever the same
+   * resource is edited again, so without a retry a single failed load (say, a
+   * request that timed out) would stick until the app is reloaded.
+   *
+   * An explicit box rather than `@observable`: this class does not call
+   * `makeObservable`, so its decorated fields are not reactive.
+   */
+  readonly loadState = observable.box<
+    { status: "loading" } | { status: "loaded" } | { status: "failed"; error: string }
+  >({ status: "loading" });
+
   load = async (): Promise<void> => {
+    runInAction(() => this.loadState.set({ status: "loading" }));
+
+    let error: string | undefined;
+
+    try {
+      error = await this.loadResource();
+    } catch (e) {
+      error = `Loading resource failed: ${getErrorMessage(e)}`;
+    }
+
+    if (error) {
+      this.dependencies.showErrorNotification(error);
+    }
+
+    runInAction(() => this.loadState.set(error ? { status: "failed", error } : { status: "loaded" }));
+  };
+
+  /**
+   * @returns why loading failed, or `undefined` on success
+   */
+  private loadResource = async (): Promise<string | undefined> => {
     await this.dependencies.waitForEditingResource();
 
     let result = await this.dependencies.requestKubeResource(this.selfLink);
 
     if (!result.callWasSuccessful) {
-      return void this.dependencies.showErrorNotification(`Loading resource failed: ${result.error}`);
+      return `Loading resource failed: ${result.error}`;
     }
 
     if (result?.response?.metadata.annotations?.[EditResourceAnnotationName]) {
       const parsed = parseKubeApi(this.selfLink);
 
       if (!parsed) {
-        return void this.dependencies.showErrorNotification(`Object's selfLink is invalid: "${this.selfLink}"`);
+        return `Object's selfLink is invalid: "${this.selfLink}"`;
       }
 
       parsed.apiVersion = result.response.metadata.annotations[EditResourceAnnotationName];
@@ -382,7 +419,7 @@ export class EditResourceModel {
     }
 
     if (!result.callWasSuccessful) {
-      return void this.dependencies.showErrorNotification(`Loading resource failed: ${result.error}`);
+      return `Loading resource failed: ${result.error}`;
     }
 
     const resource = result.response;
@@ -391,11 +428,11 @@ export class EditResourceModel {
       this._resource = resource;
     });
 
-    if (!resource) {
-      return;
+    if (resource) {
+      this.regenerateYaml();
     }
 
-    this.regenerateYaml();
+    return undefined;
   };
 
   get namespace() {

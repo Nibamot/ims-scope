@@ -4,6 +4,7 @@
  * Licensed under MIT License. See LICENSE in root directory for more information.
  */
 
+import { Button } from "@nibamot/button";
 import { Spinner } from "@nibamot/spinner";
 import { withInjectables } from "@ogre-tools/injectable-react";
 import { observer } from "mobx-react";
@@ -24,7 +25,30 @@ interface Dependencies {
   model: EditResourceModel;
 }
 
-const NonInjectedEditResource = observer(({ model, tabId }: EditResourceProps & Dependencies) => (
+const renderLoadFailure = (model: EditResourceModel, tabId: string, error: string) => (
+  <Notice>
+    <div className="flex gap-4 items-center">
+      <span className="flex-grow">{error}</span>
+      <Button label="Retry" onClick={model.load} data-testid={`retry-edit-resource-from-tab-for-${tabId}`} />
+    </div>
+  </Notice>
+);
+
+const NonInjectedEditResource = observer(({ model, tabId }: EditResourceProps & Dependencies) => {
+  const loadState = model.loadState.get();
+
+  if (loadState.status === "loading") {
+    return <Spinner center data-testid="edit-resource-tab-spinner" />;
+  }
+
+  if (loadState.status === "failed") {
+    return <div className="EditResource flex flex-col">{renderLoadFailure(model, tabId, loadState.error)}</div>;
+  }
+
+  return renderEditor(model, tabId);
+});
+
+const renderEditor = (model: EditResourceModel, tabId: string) => (
   <div className="EditResource flex flex-col">
     {model.shouldShowErrorAboutNoResource ? (
       <Notice>Resource not found</Notice>
@@ -67,7 +91,7 @@ const NonInjectedEditResource = observer(({ model, tabId }: EditResourceProps & 
       </>
     )}
   </div>
-));
+);
 
 export const EditResource = withInjectables<Dependencies, EditResourceProps>(NonInjectedEditResource, {
   getPlaceholder: () => <Spinner center data-testid="edit-resource-tab-spinner" />,

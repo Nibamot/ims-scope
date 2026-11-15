@@ -31,18 +31,47 @@ interface Dependencies {
 export class LogStore {
   protected podLogs = observable.map<TabId, PodLogLine[]>();
   protected refreshers = new Map<TabId, IntervalFn>();
+  /**
+   * Bumped whenever a tab's logs are cleared, so a request started before
+   * that (a refresh still in flight when the user reloads or switches
+   * container) can tell its response is stale and drop it.
+   */
+  protected generations = new Map<TabId, number>();
+  /**
+   * Tabs with a refresh in flight. The refresher fires every few seconds while
+   * a request may take up to its timeout, so without this they would pile up.
+   */
+  protected refreshesInFlight = new Set<TabId>();
 
   constructor(private dependencies: Dependencies) {}
 
-  protected handlerError(tabId: TabId, error: any): void {
-    if (error.error && !(error.message || error.reason || error.code)) {
+  protected getGeneration(tabId: TabId): number {
+    return this.generations.get(tabId) ?? 0;
+  }
+
+  protected describeError(error: any): string[] {
+    if (error?.error && !(error.message || error.reason || error.code)) {
       error = error.error;
     }
 
-    const message = [`Failed to load logs: ${error.message}`, `Reason: ${error.reason} (${error.code})`];
+    // Raised by the request's AbortSignal.timeout(), a DOMException whose
+    // numeric `code` (23) and missing `reason` mean nothing to the user.
+    if (error?.name === "TimeoutError") {
+      return ["Failed to load logs: the request timed out.", "Switch to another tab and back to try again."];
+    }
 
+    const message = [`Failed to load logs: ${error?.message ?? String(error)}`];
+
+    if (error?.reason) {
+      message.push(`Reason: ${error.reason}${error.code ? ` (${error.code})` : ""}`);
+    }
+
+    return message;
+  }
+
+  protected handlerError(tabId: TabId, error: any): void {
     this.stopLoadingLogs(tabId);
-    this.podLogs.set(tabId, message);
+    this.podLogs.set(tabId, this.describeError(error));
   }
 
   /**
@@ -56,14 +85,24 @@ export class LogStore {
     computedPod: IComputedValue<Pod | undefined>,
     logTabData: IComputedValue<LogTabData | undefined>,
   ): Promise<void> {
+    const generation = this.getGeneration(tabId);
+
     try {
       const logs = await this.loadLogs(computedPod, logTabData, {
         tailLines: this.getLogLines(tabId) + logLinesToLoad,
       });
 
+      if (generation !== this.getGeneration(tabId)) {
+        return;
+      }
+
       this.getRefresher(tabId, computedPod, logTabData).start();
       this.podLogs.set(tabId, logs);
     } catch (error) {
+      if (generation !== this.getGeneration(tabId)) {
+        return;
+      }
+
       this.handlerError(tabId, error);
     }
   }
@@ -103,19 +142,33 @@ export class LogStore {
   ): Promise<void> {
     const oldLogs = this.podLogs.get(tabId);
 
-    if (!oldLogs?.length) {
+    if (!oldLogs?.length || this.refreshesInFlight.has(tabId)) {
       return;
     }
+
+    const generation = this.getGeneration(tabId);
+
+    this.refreshesInFlight.add(tabId);
 
     try {
       const logs = await this.loadLogs(computedPod, logTabData, {
         sinceTime: this.getLastSinceTime(tabId),
       });
 
-      // Add newly received logs to bottom
-      this.podLogs.set(tabId, [...oldLogs, ...logs.filter(Boolean)]);
+      if (generation !== this.getGeneration(tabId)) {
+        return;
+      }
+
+      // Add newly received logs to bottom. Read the current lines rather than
+      // `oldLogs`: they may have grown (loading older lines) meanwhile.
+      this.podLogs.set(tabId, [...this.getLogs(tabId), ...logs.filter(Boolean)]);
     } catch (error) {
-      this.handlerError(tabId, error);
+      // A failed refresh keeps the logs already shown and leaves the refresher
+      // running, so the next tick retries; replacing them with an error and
+      // stopping would leave the tab dead until a manual reload.
+      console.warn(`[LOG-STORE]: failed to refresh logs for tab ${tabId}, will retry`, error);
+    } finally {
+      this.refreshesInFlight.delete(tabId);
     }
   }
 
@@ -243,6 +296,7 @@ export class LogStore {
   }
 
   clearLogs(tabId: TabId): void {
+    this.generations.set(tabId, this.getGeneration(tabId) + 1);
     this.podLogs.delete(tabId);
   }
 
