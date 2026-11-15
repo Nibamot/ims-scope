@@ -1,6 +1,6 @@
 {
   "name": "@nibamot/extensions",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "description": "IMS-Scope - Free IDE for Kubernetes: extensions",
   "homepage": "https://github.com/Nibamot/ims-scope",
   "bugs": {
