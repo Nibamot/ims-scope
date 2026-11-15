@@ -13,7 +13,7 @@ import { AnsiUp } from "ansi_up";
 import autoBindReact from "auto-bind/react";
 import DOMPurify from "dompurify";
 import { debounce } from "es-toolkit/compat";
-import { action, makeObservable, observable, reaction } from "mobx";
+import { action, comparer, makeObservable, observable, reaction } from "mobx";
 import { observer } from "mobx-react";
 import React from "react";
 import userPreferencesStateInjectable from "../../../../features/user-preferences/common/state.injectable";
@@ -200,7 +200,12 @@ class NonForwardedLogList extends React.Component<
   }
 
   componentDidUpdate() {
-    this.observableProps = this.props;
+    // Skip equal copies: React 19 can hand a class a fresh props object on a
+    // self-triggered render, and replacing the snapshot with one would
+    // re-trigger every render reading it.
+    if (!comparer.shallow(this.observableProps, this.props)) {
+      this.observableProps = this.props;
+    }
     this.bindInnerRef({
       scrollToItem: this.scrollToItem,
     });

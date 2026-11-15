@@ -8,7 +8,7 @@ import { Icon } from "@nibamot/icon";
 import { Spinner } from "@nibamot/spinner";
 import { cssNames, prevDefault } from "@nibamot/utilities";
 import { withInjectables } from "@ogre-tools/injectable-react";
-import { makeObservable, observable } from "mobx";
+import { comparer, makeObservable, observable } from "mobx";
 import { observer } from "mobx-react";
 import React from "react";
 import apiManagerInjectable from "../../../common/k8s-api/api-manager/manager.injectable";
@@ -87,7 +87,12 @@ class NonInjectedClusterIssues extends React.Component<ClusterIssuesProps & Depe
   }
 
   componentDidUpdate() {
-    this.observableProps = this.props;
+    // Skip equal copies: React 19 can hand a class a fresh props object on a
+    // self-triggered render, and replacing the snapshot with one would
+    // re-trigger every render reading it.
+    if (!comparer.shallow(this.observableProps, this.props)) {
+      this.observableProps = this.props;
+    }
   }
 
   get warnings(): Warning[] {
