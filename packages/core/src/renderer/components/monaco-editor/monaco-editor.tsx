@@ -103,7 +103,12 @@ class NonInjectedMonacoEditor extends React.Component<MonacoEditorProps & Depend
   }
 
   componentDidUpdate() {
-    this.observableProps = this.props;
+    // React 19 hands a class with defaultProps a fresh props object on every
+    // render, even a self-triggered one. Replacing the snapshot with an equal
+    // copy would re-trigger the render reading it, forever.
+    if (!comparer.shallow(this.observableProps, this.props)) {
+      this.observableProps = this.props;
+    }
   }
 
   // Stable identity across renders: an inline arrow function in JSX gets a new
