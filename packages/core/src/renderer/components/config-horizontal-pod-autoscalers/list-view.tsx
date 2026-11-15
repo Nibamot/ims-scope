@@ -7,7 +7,7 @@
 import "./list-view.scss";
 
 import { withInjectables } from "@ogre-tools/injectable-react";
-import { makeObservable, observable } from "mobx";
+import { comparer, makeObservable, observable } from "mobx";
 import { observer } from "mobx-react";
 import React from "react";
 import { KubeObjectAge } from "../kube-object/age";
@@ -54,7 +54,12 @@ class NonInjectedHorizontalPodAutoscalers extends React.Component<Dependencies> 
   }
 
   componentDidUpdate() {
-    this.observableProps = this.props;
+    // Skip equal copies: React 19 can hand a class a fresh props object on a
+    // self-triggered render, and replacing the snapshot with one would
+    // re-trigger every render reading it.
+    if (!comparer.shallow(this.observableProps, this.props)) {
+      this.observableProps = this.props;
+    }
   }
 
   getTargets(hpa: HorizontalPodAutoscaler) {

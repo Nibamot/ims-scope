@@ -10,7 +10,7 @@ import { Spinner } from "@nibamot/spinner";
 import { cssNames, prevDefault } from "@nibamot/utilities";
 import { withInjectables } from "@ogre-tools/injectable-react";
 import { kebabCase } from "es-toolkit";
-import { makeObservable, observable } from "mobx";
+import { comparer, makeObservable, observable } from "mobx";
 import { observer } from "mobx-react";
 import React from "react";
 import { DrawerTitle } from "../drawer/drawer-title";
@@ -62,7 +62,12 @@ class NonInjectedVolumeDetailsList extends React.Component<VolumeDetailsListProp
   }
 
   componentDidUpdate() {
-    this.observableProps = this.props;
+    // Skip equal copies: React 19 can hand a class a fresh props object on a
+    // self-triggered render, and replacing the snapshot with one would
+    // re-trigger every render reading it.
+    if (!comparer.shallow(this.observableProps, this.props)) {
+      this.observableProps = this.props;
+    }
   }
 
   getTableRow = (uid: string) => {

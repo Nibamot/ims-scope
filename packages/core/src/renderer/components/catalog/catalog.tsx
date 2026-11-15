@@ -9,7 +9,7 @@ import { Icon } from "@nibamot/icon";
 import { loggerInjectionToken } from "@nibamot/logger";
 import { showErrorNotificationInjectable } from "@nibamot/notifications";
 import { withInjectables } from "@ogre-tools/injectable-react";
-import { action, makeObservable, observable, reaction, runInAction, when } from "mobx";
+import { action, comparer, makeObservable, observable, reaction, runInAction, when } from "mobx";
 import { observer } from "mobx-react";
 import React from "react";
 import emitAppEventInjectable from "../../../common/app-event-bus/emit-event.injectable";
@@ -103,7 +103,12 @@ class NonInjectedCatalog extends React.Component<Dependencies> {
   }
 
   componentDidUpdate() {
-    this.observableProps = this.props;
+    // Skip equal copies: React 19 can hand a class a fresh props object on a
+    // self-triggered render, and replacing the snapshot with one would
+    // re-trigger every render reading it.
+    if (!comparer.shallow(this.observableProps, this.props)) {
+      this.observableProps = this.props;
+    }
   }
 
   async componentDidMount() {
