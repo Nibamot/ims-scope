@@ -26,16 +26,18 @@ import type { ServerIncomingMessage } from "./lens-proxy";
 /**
  * The certificate is a placeholder in unit tests and the real RSA keygen is
  * mocked away, so the TLS server cannot be created. Nothing here needs TLS:
- * the upgrade handler is registered on the server object, which a plain http
- * server models exactly.
+ * the upgrade handler is registered on the server object, and the HTTP/1.1
+ * path the secure server keeps open with `allowHTTP1` is what these tests
+ * drive, both of which a plain http server models exactly. The HTTP/2
+ * adaptation is covered by `http2-compat.test.ts`.
  */
-vi.mock("node:https", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("node:https")>();
+vi.mock("node:http2", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:http2")>();
   const http = await import("node:http");
-  const createServer = (_options: unknown, handler: Parameters<typeof http.createServer>[1]) =>
+  const createSecureServer = (_options: unknown, handler: Parameters<typeof http.createServer>[1]) =>
     http.createServer(handler);
 
-  return { ...actual, createServer, default: { ...actual, createServer } };
+  return { ...actual, createSecureServer, default: { ...actual, createSecureServer } };
 });
 
 describe("closing the lens proxy", () => {
