@@ -59,6 +59,7 @@ const userPreferencesPersistentStorageInjectable = getInjectable({
         state.openAtLogin = descriptors.openAtLogin.fromStore(preferences.openAtLogin);
         state.showTrayIcon = descriptors.showTrayIcon.fromStore(preferences.showTrayIcon);
         state.hotbarAutoHide = descriptors.hotbarAutoHide.fromStore(preferences.hotbarAutoHide);
+        state.hotbarCycleGroups = descriptors.hotbarCycleGroups.fromStore(preferences.hotbarCycleGroups);
         state.persistentSearch = descriptors.persistentSearch.fromStore(preferences.persistentSearch);
         state.logViewerPreferences = descriptors.logViewerPreferences.fromStore(preferences.logViewerPreferences);
         state.shell = descriptors.shell.fromStore(preferences.shell);
@@ -92,6 +93,7 @@ const userPreferencesPersistentStorageInjectable = getInjectable({
             openAtLogin: descriptors.openAtLogin.toStore(state.openAtLogin),
             showTrayIcon: descriptors.showTrayIcon.toStore(state.showTrayIcon),
             hotbarAutoHide: descriptors.hotbarAutoHide.toStore(state.hotbarAutoHide),
+            hotbarCycleGroups: descriptors.hotbarCycleGroups.toStore(state.hotbarCycleGroups),
             persistentSearch: descriptors.persistentSearch.toStore(state.persistentSearch),
             logViewerPreferences: descriptors.logViewerPreferences.toStore(state.logViewerPreferences),
             shell: descriptors.shell.toStore(state.shell),

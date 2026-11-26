@@ -27,6 +27,14 @@ const NonInjectedHotbarAutoHide = observer(({ state }: Dependencies) => (
     >
       Automatically hide Hotbar
     </Switch>
+    <Switch
+      checked={state.hotbarCycleGroups}
+      onChange={() => {
+        state.hotbarCycleGroups = !state.hotbarCycleGroups;
+      }}
+    >
+      Hotbar arrows switch between cluster groups instead of hotbars
+    </Switch>
   </section>
 ));
 

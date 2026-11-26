@@ -498,6 +498,16 @@ exports[`preferences - closing-preferences > given accessing preferences directl
                       type="checkbox"
                     />
                   </label>
+                  <label
+                    class="Switch"
+                    data-testid="switch"
+                  >
+                    Hotbar arrows switch between cluster groups instead of hotbars
+                    <input
+                      role="switch"
+                      type="checkbox"
+                    />
+                  </label>
                 </section>
               </div>
               <div
@@ -2709,6 +2719,16 @@ exports[`preferences - closing-preferences > given already in a page and then na
                     data-testid="switch"
                   >
                     Automatically hide Hotbar
+                    <input
+                      role="switch"
+                      type="checkbox"
+                    />
+                  </label>
+                  <label
+                    class="Switch"
+                    data-testid="switch"
+                  >
+                    Hotbar arrows switch between cluster groups instead of hotbars
                     <input
                       role="switch"
                       type="checkbox"

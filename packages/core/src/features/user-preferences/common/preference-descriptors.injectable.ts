@@ -109,6 +109,10 @@ const userPreferenceDescriptorsInjectable = getInjectable({
         fromStore: (val) => val ?? false,
         toStore: (val) => (!val ? undefined : val),
       }),
+      hotbarCycleGroups: getPreferenceDescriptor<boolean>({
+        fromStore: (val) => val ?? false,
+        toStore: (val) => (!val ? undefined : val),
+      }),
       persistentSearch: getPreferenceDescriptor<boolean>({
         fromStore: (val) => val ?? false,
         toStore: (val) => (!val ? undefined : val),

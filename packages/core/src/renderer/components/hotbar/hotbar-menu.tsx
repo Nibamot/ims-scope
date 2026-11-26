@@ -31,6 +31,7 @@ import userPreferencesStateInjectable from "../../../features/user-preferences/c
 import catalogEntityRegistryInjectable from "../../api/catalog/entity/registry.injectable";
 import { HotbarCell } from "./hotbar-cell";
 import { HotbarEntityIcon } from "./hotbar-entity-icon";
+import hotbarGroupCycleInjectable from "./hotbar-group-cycle.injectable";
 import { computeGroupDividers } from "./hotbar-group-dividers";
 import { HotbarIcon } from "./hotbar-icon";
 import { HotbarSelector } from "./hotbar-selector";
@@ -43,6 +44,8 @@ import type { Hotbar } from "../../../features/hotbar/storage/common/hotbar";
 import type { HotbarItem } from "../../../features/hotbar/storage/common/types";
 import type { CatalogEntityRegistry } from "../../api/catalog/entity/registry";
 import type { CatalogEntity } from "../../api/catalog-entity";
+import type { HotbarGroupCycle } from "./hotbar-group-cycle.injectable";
+import type { HotbarGroup } from "./hotbar-groups";
 
 export interface HotbarMenuProps {
   className?: IClassName;
@@ -52,6 +55,7 @@ interface Dependencies {
   activeHotbar: IComputedValue<Hotbar | undefined>;
   entityRegistry: CatalogEntityRegistry;
   userPreferencesState: UserPreferencesState;
+  groupCycle: HotbarGroupCycle;
 }
 
 // A single grid cell acting as a @dnd-kit drop target. Its `id` is the cell
@@ -110,7 +114,7 @@ function HotbarDraggableIcon({
 }
 
 const NonInjectedHotbarMenu = observer((props: Dependencies & HotbarMenuProps) => {
-  const { activeHotbar, entityRegistry, userPreferencesState, className } = props;
+  const { activeHotbar, entityRegistry, userPreferencesState, groupCycle, className } = props;
 
   const [draggingOver, setDraggingOver] = useState(false);
   // The uid of the entity currently being dragged, and the index of the cell it
@@ -125,6 +129,9 @@ const NonInjectedHotbarMenu = observer((props: Dependencies & HotbarMenuProps) =
   // suppressed so the hotbar stays put until the drop.
   const draggingOverRef = useRef(false);
   const hotbar = activeHotbar.get();
+  // With "cycle groups" on, a selected group replaces the pinned grid; "All"
+  // (no group selected) shows the active hotbar as usual.
+  const activeGroup = userPreferencesState.hotbarCycleGroups ? groupCycle.active.get() : undefined;
 
   // Preserve react-beautiful-dnd's ~5px drag threshold so a plain click on an
   // icon still opens the entity instead of starting a drag.
@@ -303,6 +310,38 @@ const NonInjectedHotbarMenu = observer((props: Dependencies & HotbarMenuProps) =
     });
   };
 
+  // A group page is built from the catalog, not pinned, so it has no drag and
+  // drop: its order is the name order collectHotbarGroups() sorted it into.
+  const renderGroupGrid = (group: HotbarGroup<CatalogEntity>) => {
+    const cellCount = Math.max(defaultHotbarCells, group.entities.length);
+
+    return (
+      <>
+        <div className="HotbarGroupDivider">{group.label}</div>
+        {Array.from({ length: cellCount }, (_, index) => {
+          const entity = group.entities[index];
+
+          return (
+            <HotbarCell key={entity ? entity.getId() : `cell${index}`} index={index}>
+              {entity && (
+                <div style={{ zIndex: cellCount - index, position: "absolute" }}>
+                  <HotbarEntityIcon
+                    index={index}
+                    entity={entity}
+                    onClick={() => entityRegistry.onRun(entity)}
+                    remove={removeItem}
+                    add={addItem}
+                    size={40}
+                  />
+                </div>
+              )}
+            </HotbarCell>
+          );
+        })}
+      </>
+    );
+  };
+
   // The entity being dragged, rendered inside `<DragOverlay>` so it follows the
   // cursor in a body-level portal and is never clipped by the hotbar's overflow.
   const activeItem = activeId != null ? hotbar?.items.find((item) => item?.entity.uid === activeId) : undefined;
@@ -330,24 +369,28 @@ const NonInjectedHotbarMenu = observer((props: Dependencies & HotbarMenuProps) =
       onMouseLeave={handleMouseLeave}
     >
       <div className="HotbarItems flex flex-col">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={onDragStart}
-          onDragOver={onDragOver}
-          onDragEnd={onDragEnd}
-          onDragCancel={onDragCancel}
-        >
-          {renderGrid()}
-          {/* Portal the overlay to <body>: when auto-hide is on, `.HotbarMenu`
+        {activeGroup ? (
+          renderGroupGrid(activeGroup)
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDragEnd={onDragEnd}
+            onDragCancel={onDragCancel}
+          >
+            {renderGrid()}
+            {/* Portal the overlay to <body>: when auto-hide is on, `.HotbarMenu`
               has a `transform`, which makes it the containing block for the
               `position: fixed` overlay and clips it to the hotbar's
               `overflow: hidden`. Rendering it at the body escapes that context. */}
-          {createPortal(
-            <DragOverlay>{activeItem ? renderIcon(activeItem, activeEntity, activeIndex, true) : null}</DragOverlay>,
-            document.body,
-          )}
-        </DndContext>
+            {createPortal(
+              <DragOverlay>{activeItem ? renderIcon(activeItem, activeEntity, activeIndex, true) : null}</DragOverlay>,
+              document.body,
+            )}
+          </DndContext>
+        )}
       </div>
       <HotbarSelector />
     </div>
@@ -360,5 +403,6 @@ export const HotbarMenu = withInjectables<Dependencies, HotbarMenuProps>(NonInje
     entityRegistry: di.inject(catalogEntityRegistryInjectable),
     activeHotbar: di.inject(activeHotbarInjectable),
     userPreferencesState: di.inject(userPreferencesStateInjectable),
+    groupCycle: di.inject(hotbarGroupCycleInjectable),
   }),
 });

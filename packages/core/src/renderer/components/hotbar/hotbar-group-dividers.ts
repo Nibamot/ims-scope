@@ -14,7 +14,8 @@ export interface HotbarGroupableItem {
  * cells, `null` otherwise. Cells are never reordered — this only reflects
  * the manual order already chosen by the user via drag-and-drop.
  */
-const normalizeGroup = (group: string | undefined): string | undefined => group?.trim().toLowerCase() || undefined;
+export const normalizeGroup = (group: string | undefined): string | undefined =>
+  group?.trim().toLowerCase() || undefined;
 
 export function computeGroupDividers(items: readonly (HotbarGroupableItem | undefined)[]): (string | null)[] {
   let lastNormalizedGroup: string | undefined;
