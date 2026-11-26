@@ -1,6 +1,6 @@
 {
   "name": "@nibamot/computed-channel",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "private": true,
   "description": "MobX-like computed between channels",
   "homepage": "https://github.com/Nibamot/ims-scope",

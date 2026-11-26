@@ -1,6 +1,6 @@
 {
   "name": "@nibamot/generate-license",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "private": true,
   "description": "CLI for generating license files",
   "homepage": "https://github.com/Nibamot/ims-scope",

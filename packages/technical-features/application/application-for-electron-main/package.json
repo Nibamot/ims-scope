@@ -1,6 +1,6 @@
 {
   "name": "@nibamot/application-for-electron-main",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "private": true,
   "description": "Electron's main specifics for creating IMS-Scope applications",
   "homepage": "https://github.com/Nibamot/ims-scope",
