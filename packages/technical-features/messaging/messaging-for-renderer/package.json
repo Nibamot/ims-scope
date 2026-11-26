@@ -1,6 +1,6 @@
 {
   "name": "@nibamot/messaging-for-renderer",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "private": true,
   "description": "Implementations for 'messaging' in Electron renderer",
   "homepage": "https://github.com/Nibamot/ims-scope",
