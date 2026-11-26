@@ -486,6 +486,16 @@ exports[`preferences - navigation to editor preferences > given in preferences, 
                       type="checkbox"
                     />
                   </label>
+                  <label
+                    class="Switch"
+                    data-testid="switch"
+                  >
+                    Hotbar arrows switch between cluster groups instead of hotbars
+                    <input
+                      role="switch"
+                      type="checkbox"
+                    />
+                  </label>
                 </section>
               </div>
               <div

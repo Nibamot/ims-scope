@@ -43,6 +43,7 @@ import { registerInjectables as registerFavoritesInjectables } from "./favorites
 import { registerInjectables as registerHelmInjectables } from "./helm/register-injectables";
 import { registerInjectables as registerHelmChartsInjectables } from "./helm-charts/register-injectables";
 import { registerInjectables as registerHelmReleasesInjectables } from "./helm-releases/register-injectables";
+import { registerInjectables as registerHotbarInjectables } from "./hotbar/register-injectables";
 import { registerInjectables as registerInputInjectables } from "./input/register-injectables";
 import { registerInjectables as registerItemObjectListInjectables } from "./item-object-list/register-injectables";
 import { registerInjectables as registerKubeDetailParamsInjectables } from "./kube-detail-params/register-injectables";
@@ -269,6 +270,11 @@ export function registerInjectables(di: DiContainerForInjection): void {
   }
   try {
     registerHelmReleasesInjectables(di);
+  } catch (e) {
+    /* Ignore duplicate registration */
+  }
+  try {
+    registerHotbarInjectables(di);
   } catch (e) {
     /* Ignore duplicate registration */
   }

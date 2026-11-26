@@ -19,8 +19,11 @@ import activeHotbarInjectable from "../../../features/hotbar/storage/common/acti
 import computeDisplayIndexInjectable from "../../../features/hotbar/storage/common/compute-display-index.injectable";
 import switchToNextHotbarInjectable from "../../../features/hotbar/storage/common/switch-to-next.injectable";
 import switchToPreviousHotbarInjectable from "../../../features/hotbar/storage/common/switch-to-previous.injectable";
+import userPreferencesStateInjectable from "../../../features/user-preferences/common/state.injectable";
 import { Badge } from "../badge";
 import commandOverlayInjectable from "../command-palette/command-overlay.injectable";
+import hotbarGroupCycleInjectable from "./hotbar-group-cycle.injectable";
+import { HotbarGroupSwitchCommand } from "./hotbar-group-switch-command";
 import styles from "./hotbar-selector.module.scss";
 import { HotbarSwitchCommand } from "./hotbar-switch-command";
 
@@ -30,6 +33,8 @@ import type { ComputeDisplayIndex } from "../../../features/hotbar/storage/commo
 import type { Hotbar } from "../../../features/hotbar/storage/common/hotbar";
 import type { SwitchToNextHotbar } from "../../../features/hotbar/storage/common/switch-to-next.injectable";
 import type { SwitchToPreviousHotbar } from "../../../features/hotbar/storage/common/switch-to-previous.injectable";
+import type { UserPreferencesState } from "../../../features/user-preferences/common/state.injectable";
+import type { HotbarGroupCycle } from "./hotbar-group-cycle.injectable";
 
 interface Dependencies {
   activeHotbar: IComputedValue<Hotbar | undefined>;
@@ -37,6 +42,8 @@ interface Dependencies {
   switchToPreviousHotbar: SwitchToPreviousHotbar;
   switchToNextHotbar: SwitchToNextHotbar;
   computeDisplayIndex: ComputeDisplayIndex;
+  userPreferencesState: UserPreferencesState;
+  groupCycle: HotbarGroupCycle;
 }
 
 const NonInjectedHotbarSelector = observer(
@@ -46,10 +53,16 @@ const NonInjectedHotbarSelector = observer(
     switchToNextHotbar,
     switchToPreviousHotbar,
     computeDisplayIndex,
+    userPreferencesState,
+    groupCycle,
   }: Dependencies) => {
     const [tooltipVisible, setTooltipVisible] = useState(false);
     const tooltipTimeout = useRef<number | undefined>(undefined);
     const hotbar = activeHotbar.get();
+    const cycleGroups = userPreferencesState.hotbarCycleGroups;
+    const activeGroup = cycleGroups ? groupCycle.active.get() : undefined;
+    const label = cycleGroups ? (activeGroup?.label ?? "All") : hotbar ? computeDisplayIndex(hotbar.id) : "??";
+    const tooltip = cycleGroups ? (activeGroup?.label ?? "All") : hotbar?.name.get();
 
     function clearTimer() {
       clearTimeout(tooltipTimeout.current);
@@ -63,12 +76,22 @@ const NonInjectedHotbarSelector = observer(
 
     function onPrevClick() {
       onTooltipShow();
-      switchToPreviousHotbar();
+
+      if (cycleGroups) {
+        groupCycle.previous();
+      } else {
+        switchToPreviousHotbar();
+      }
     }
 
     function onNextClick() {
       onTooltipShow();
-      switchToNextHotbar();
+
+      if (cycleGroups) {
+        groupCycle.next();
+      } else {
+        switchToNextHotbar();
+      }
     }
 
     function onMouseEvent(event: React.MouseEvent) {
@@ -77,14 +100,14 @@ const NonInjectedHotbarSelector = observer(
     }
 
     return (
-      <div className={styles.HotbarSelector}>
+      <div className={cssNames(styles.HotbarSelector, { [styles.cycleGroups]: cycleGroups })}>
         <Icon material="arrow_left" className={cssNames(styles.Icon)} onClick={onPrevClick} />
         <div className={styles.HotbarIndex}>
           <Badge
             id="hotbarIndex"
             small
-            label={hotbar ? computeDisplayIndex(hotbar.id) : "??"}
-            onClick={() => openCommandOverlay(<HotbarSwitchCommand />)}
+            label={label}
+            onClick={() => openCommandOverlay(cycleGroups ? <HotbarGroupSwitchCommand /> : <HotbarSwitchCommand />)}
             className={styles.Badge}
             onMouseEnter={onMouseEvent}
             onMouseLeave={onMouseEvent}
@@ -96,7 +119,7 @@ const NonInjectedHotbarSelector = observer(
             preferredPositions={[TooltipPosition.TOP, TooltipPosition.TOP_LEFT]}
             data-testid={`hotbar-menu-badge-tooltip-for-${hotbar?.name.get()}`}
           >
-            {hotbar?.name.get()}
+            {tooltip}
           </Tooltip>
         </div>
         <Icon material="arrow_right" className={styles.Icon} onClick={onNextClick} />
@@ -113,5 +136,7 @@ export const HotbarSelector = withInjectables<Dependencies>(NonInjectedHotbarSel
     switchToNextHotbar: di.inject(switchToNextHotbarInjectable),
     switchToPreviousHotbar: di.inject(switchToPreviousHotbarInjectable),
     computeDisplayIndex: di.inject(computeDisplayIndexInjectable),
+    userPreferencesState: di.inject(userPreferencesStateInjectable),
+    groupCycle: di.inject(hotbarGroupCycleInjectable),
   }),
 });

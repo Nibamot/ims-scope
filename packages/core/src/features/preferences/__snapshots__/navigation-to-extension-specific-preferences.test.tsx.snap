@@ -499,6 +499,16 @@ exports[`preferences - navigation to extension specific preferences > given in p
                         type="checkbox"
                       />
                     </label>
+                    <label
+                      class="Switch"
+                      data-testid="switch"
+                    >
+                      Hotbar arrows switch between cluster groups instead of hotbars
+                      <input
+                        role="switch"
+                        type="checkbox"
+                      />
+                    </label>
                   </section>
                 </div>
                 <div
@@ -3601,6 +3611,16 @@ exports[`preferences - navigation to extension specific preferences > given in p
                       type="checkbox"
                     />
                   </label>
+                  <label
+                    class="Switch"
+                    data-testid="switch"
+                  >
+                    Hotbar arrows switch between cluster groups instead of hotbars
+                    <input
+                      role="switch"
+                      type="checkbox"
+                    />
+                  </label>
                 </section>
               </div>
               <div
@@ -4505,6 +4525,16 @@ exports[`preferences - navigation to extension specific preferences > given in p
                     data-testid="switch"
                   >
                     Automatically hide Hotbar
+                    <input
+                      role="switch"
+                      type="checkbox"
+                    />
+                  </label>
+                  <label
+                    class="Switch"
+                    data-testid="switch"
+                  >
+                    Hotbar arrows switch between cluster groups instead of hotbars
                     <input
                       role="switch"
                       type="checkbox"
