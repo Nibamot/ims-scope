@@ -73,14 +73,18 @@ const createKubeAuthProxyInjectable = getInjectable({
         const apiUrl = await clusterApiUrl();
         const certificate = await di.inject(kubeAuthProxyCertificateInjectable, apiUrl.hostname);
 
-        proxyProcess = spawn(freeLensK8sProxyPath, [], {
+        // freelens-k8s-proxy v2: the proxy is the `proxy` subcommand, and its
+        // settings are the FREELENS_PROXY_* variables. The certificate and key
+        // have no flags, and the rest stay in the environment too so that they
+        // never show up in `ps`.
+        proxyProcess = spawn(freeLensK8sProxyPath, ["proxy"], {
           env: {
             ...env,
             KUBECONFIG: cluster.kubeConfigPath.get(),
-            KUBECONFIG_CONTEXT: cluster.contextName.get(),
-            API_PREFIX: apiPrefix,
-            PROXY_KEY: certificate.private,
-            PROXY_CERT: certificate.cert,
+            FREELENS_PROXY_CONTEXT: cluster.contextName.get(),
+            FREELENS_PROXY_API_PREFIX: apiPrefix,
+            FREELENS_PROXY_KEY: certificate.private,
+            FREELENS_PROXY_CERT: certificate.cert,
           },
           cwd: getDirnameOfPath(cluster.kubeConfigPath.get()),
         });

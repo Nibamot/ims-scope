@@ -211,6 +211,20 @@ describe("kube auth proxy tests", () => {
       await kubeAuthProxy.run();
     });
 
+    it("starts the proxy subcommand with the FREELENS_PROXY_* variables of freelens-k8s-proxy v2", () => {
+      const [, args, options] = spawnMock.mock.calls[0];
+
+      expect(args).toEqual(["proxy"]);
+      expect(options.env).toMatchObject({
+        KUBECONFIG: "/kind-config.yml",
+        FREELENS_PROXY_CONTEXT: "kind-kind",
+        FREELENS_PROXY_API_PREFIX: kubeAuthProxy.apiPrefix,
+        FREELENS_PROXY_KEY: expect.any(String),
+        FREELENS_PROXY_CERT: expect.any(String),
+      });
+      expect(options.env).not.toHaveProperty("API_PREFIX");
+    });
+
     it("should call spawn and broadcast errors", () => {
       listeners.emit("error", { message: "foobarbat" });
 
