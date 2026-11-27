@@ -1,6 +1,6 @@
 {
   "name": "@nibamot/json-api",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "private": true,
   "description": "JSON api client",
   "homepage": "https://github.com/Nibamot/ims-scope",
