@@ -9,8 +9,8 @@ import "./logs-dialog.scss";
 import { Button } from "@nibamot/button";
 import { Icon } from "@nibamot/icon";
 import { showSuccessNotificationInjectable } from "@nibamot/notifications";
+import { noop } from "@nibamot/utilities";
 import { withInjectables } from "@ogre-tools/injectable-react";
-import { clipboard } from "electron";
 import { kebabCase } from "es-toolkit";
 import { Dialog } from "../dialog";
 import { Wizard, WizardStep } from "../wizard";
@@ -41,8 +41,9 @@ const NonInjectedLogsDialog = (props: LogsDialogProps & Dependencies) => {
               <Button
                 plain
                 onClick={() => {
-                  clipboard.writeText(logs);
-                  showSuccessNotification(`Logs copied to clipboard.`);
+                  navigator.clipboard
+                    .writeText(logs)
+                    .then(() => showSuccessNotification(`Logs copied to clipboard.`), noop);
                 }}
               >
                 <Icon material="assignment" />

@@ -12,9 +12,8 @@
 import { Button } from "@nibamot/button";
 import { Icon } from "@nibamot/icon";
 import { showSuccessNotificationInjectable } from "@nibamot/notifications";
-import { cssNames } from "@nibamot/utilities";
+import { cssNames, noop } from "@nibamot/utilities";
 import { withInjectables } from "@ogre-tools/injectable-react";
-import { clipboard } from "electron";
 import { observer } from "mobx-react";
 import React from "react";
 import { saveFileDialog } from "../../utils/saveFile";
@@ -54,8 +53,9 @@ class NonInjectedKubeConfigDialog extends React.Component<KubeConfigDialogProps 
   };
 
   copyToClipboard = (config: string) => {
-    clipboard.writeText(config);
-    this.props.showSuccessNotification("Config copied to clipboard");
+    navigator.clipboard
+      .writeText(config)
+      .then(() => this.props.showSuccessNotification("Config copied to clipboard"), noop);
   };
 
   download = (config: string) => {
