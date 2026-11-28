@@ -18,8 +18,10 @@ const shouldStartHiddenInjectable = getInjectable({
     const commandLineArguments = di.inject(commandLineArgumentsInjectable);
 
     // Start the app without showing the main window when auto starting on login
-    // (On Windows and Linux, we get a flag. On MacOS, we get special API.)
-    return commandLineArguments.includes("--hidden") || (isMac && app.getLoginItemSettings().wasOpenedAsHidden);
+    // (On Windows and Linux, we get a flag. On macOS, the login item gets no
+    // arguments, so we ask whether the app was opened at login. Electron 44
+    // removed the "open as hidden" login item setting.)
+    return commandLineArguments.includes("--hidden") || (isMac && app.getLoginItemSettings().wasOpenedAtLogin);
   },
 });
 

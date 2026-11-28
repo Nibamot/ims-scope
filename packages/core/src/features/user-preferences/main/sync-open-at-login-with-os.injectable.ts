@@ -22,7 +22,8 @@ const setupSyncOpenAtLoginWithOsInjectable = getInjectable({
         (openAtLogin) => {
           setLoginItemSettings({
             openAtLogin,
-            openAsHidden: true,
+            // Read on Windows. A macOS login item gets no arguments, so
+            // should-start-hidden asks whether the app was opened at login.
             args: ["--hidden"],
           });
         },
