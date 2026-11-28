@@ -178,8 +178,8 @@ catalogs:
       specifier: 3.4.18
       version: 3.4.18
     electron:
-      specifier: 42.7.1
-      version: 42.7.1
+      specifier: 44.11.6
+      version: 44.11.6
     electron-builder:
       specifier: 26.15.7
       version: 26.15.7
@@ -262,8 +262,8 @@ catalogs:
       specifier: 7.3.0
       version: 7.3.0
     playwright:
-      specifier: 1.61.1
-      version: 1.61.1
+      specifier: 1.65.1
+      version: 1.65.1
     pnpm:
       specifier: 11.18.0
       version: 11.18.0
@@ -672,7 +672,7 @@ importers:
         version: 6.0.4(vite@8.1.5(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.6.1)(less@4.2.2(supports-color@8.1.1))(sass-embedded@1.100.0)(sass@1.101.0)(stylus@0.62.0(supports-color@8.1.1))(terser@5.39.0))
       electron:
         specifier: 'catalog:'
-        version: 42.7.1(supports-color@8.1.1)
+        version: 44.11.6(supports-color@8.1.1)
       electron-builder:
         specifier: 'catalog:'
         version: 26.15.7(electron-builder-squirrel-windows@26.15.7)(supports-color@8.1.1)
@@ -684,7 +684,7 @@ importers:
         version: 6.0.0-beta.1(supports-color@8.1.1)(vite@8.1.5(@types/node@24.12.4)(esbuild@0.28.1)(jiti@2.6.1)(less@4.2.2(supports-color@8.1.1))(sass-embedded@1.100.0)(sass@1.101.0)(stylus@0.62.0(supports-color@8.1.1))(terser@5.39.0))
       playwright:
         specifier: 'catalog:'
-        version: 1.61.1
+        version: 1.65.1
       sass-embedded:
         specifier: 'catalog:'
         version: 1.100.0
@@ -1132,7 +1132,7 @@ importers:
         version: 8.18.1
       electron:
         specifier: 'catalog:'
-        version: 42.7.1(supports-color@8.1.1)
+        version: 44.11.6(supports-color@8.1.1)
       jsdom:
         specifier: 'catalog:'
         version: 29.1.1(@noble/hashes@2.2.0)
@@ -1603,7 +1603,7 @@ importers:
         version: 23.2.0
       electron:
         specifier: 'catalog:'
-        version: 42.7.1(supports-color@8.1.1)
+        version: 44.11.6(supports-color@8.1.1)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1794,7 +1794,7 @@ importers:
         version: link:../../../infrastructure/typescript
       electron:
         specifier: 'catalog:'
-        version: 42.7.1(supports-color@8.1.1)
+        version: 44.11.6(supports-color@8.1.1)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1828,7 +1828,7 @@ importers:
         version: 23.2.0(@ogre-tools/fp@23.2.0)(@ogre-tools/injectable@23.2.0(@ogre-tools/fp@23.2.0))(mobx@6.15.0)
       electron:
         specifier: 'catalog:'
-        version: 42.7.1(supports-color@8.1.1)
+        version: 44.11.6(supports-color@8.1.1)
       mobx:
         specifier: 'catalog:'
         version: 6.15.0
@@ -5257,6 +5257,11 @@ packages:
     engines: {node: '>= 22.12.0'}
     hasBin: true
 
+  electron@44.11.6:
+    resolution: {integrity: sha512-ntR909wtKzZhmxmJXONDfoEC0rzVm1LPtC8TKhwPgpY9dhaET1eS1If7HseDo6ALbd2jyWxqgJ1QcQ67dhZNfw==}
+    engines: {node: '>= 22.12.0'}
+    hasBin: true
+
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
 
@@ -5462,11 +5467,6 @@ packages:
 
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
-
-  fsevents@2.3.2:
-    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
-    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
-    os: [darwin]
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -6353,14 +6353,14 @@ packages:
     resolution: {integrity: sha512-emEcLuomt2j03vxD54giVB4SxTjnsqkU692xZOZXHDVoYyypEm+b3jpiTcc+Cf+myooc+/Ly0z01jqeNHVgJGw==}
     engines: {node: '>=16.0.0'}
 
-  playwright-core@1.61.1:
-    resolution: {integrity: sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==}
-    engines: {node: '>=18'}
+  playwright-core@1.65.1:
+    resolution: {integrity: sha512-hqPpz7blSMPxWVdoeE1yiBSzXsKiVOd2k+kjCvmUywD2GPO2Dd9HfcWnq9NN0GHbNZDFgZ9JfBFr+X5/BLo0qw==}
+    engines: {node: '>=20'}
     hasBin: true
 
-  playwright@1.61.1:
-    resolution: {integrity: sha512-DWnY5o3YbLWK4GovuAVwpqL+1VwGNdUGrRr++8j8PtQQzvAVZUIMjKQ90fY689sEJZJBbZVw1rXaOKSTitkzPQ==}
-    engines: {node: '>=18'}
+  playwright@1.65.1:
+    resolution: {integrity: sha512-vJ1FuoOrNwOKHUIVEvSt3jT1L+wjjDpwhwIstKtfvTh8XIG4FG4bIFuvNdMxi81LGfAhUgUZleVFaOLY4RIUUw==}
+    engines: {node: '>=20'}
     hasBin: true
 
   plist@3.1.0:
@@ -10092,6 +10092,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  electron@44.11.6(supports-color@8.1.1):
+    dependencies:
+      '@electron-internal/extract-zip': 1.0.3
+      '@electron/get': 5.0.0(supports-color@8.1.1)
+      '@types/node': 24.12.4
+    transitivePeerDependencies:
+      - supports-color
+
   emoji-regex@8.0.0: {}
 
   enabled@2.0.0: {}
@@ -10329,9 +10337,6 @@ snapshots:
       minipass: 7.1.3
 
   fs.realpath@1.0.0: {}
-
-  fsevents@2.3.2:
-    optional: true
 
   fsevents@2.3.3:
     optional: true
@@ -11211,13 +11216,11 @@ snapshots:
       pvutils: 1.1.5
       tslib: 2.8.1
 
-  playwright-core@1.61.1: {}
+  playwright-core@1.65.1: {}
 
-  playwright@1.61.1:
+  playwright@1.65.1:
     dependencies:
-      playwright-core: 1.61.1
-    optionalDependencies:
-      fsevents: 2.3.2
+      playwright-core: 1.65.1
 
   plist@3.1.0:
     dependencies:

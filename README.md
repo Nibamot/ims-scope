@@ -29,7 +29,7 @@ download the right package for your system.
 
 ### macOS
 
-macOS 12 or later is required.
+macOS 13 or later is required.
 
 Download either the PKG (installer) or DMG (image) package from the
 [releases](https://github.com/Nibamot/ims-scope/releases) page, or install

@@ -9,7 +9,6 @@ import { disposer } from "@nibamot/utilities";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Terminal as XTerm } from "@xterm/xterm";
-import { clipboard } from "electron";
 import { once } from "es-toolkit";
 import { debounce } from "es-toolkit/compat";
 import { reaction } from "mobx";
@@ -207,14 +206,23 @@ export class Terminal {
     this.viewport.scrollTop = this.scrollPos; // restore last scroll position
   };
 
-  onContextMenu = () => {
-    if (
-      // don't paste if user hasn't turned on the feature
-      this.dependencies.terminalCopyOnSelect.get() &&
+  onContextMenu = async () => {
+    // don't paste if user hasn't turned on the feature
+    if (!this.dependencies.terminalCopyOnSelect.get()) {
+      return;
+    }
+
+    // Electron's clipboard is asynchronous in the renderer since Electron 44;
+    // the web one is the same and needs nothing from Electron.
+    try {
+      const text = await navigator.clipboard.readText();
+
       // don't paste if the clipboard doesn't have text
-      clipboard.availableFormats().includes("text/plain")
-    ) {
-      this.xterm.paste(clipboard.readText());
+      if (text) {
+        this.xterm.paste(text);
+      }
+    } catch (error) {
+      this.dependencies.logger.warn("[TERMINAL]: failed to read the clipboard", error);
     }
   };
 
@@ -222,7 +230,9 @@ export class Terminal {
     const selection = this.xterm.getSelection().trim();
 
     if (this.dependencies.terminalCopyOnSelect.get() && selection) {
-      clipboard.writeText(selection);
+      navigator.clipboard.writeText(selection).catch((error) => {
+        this.dependencies.logger.warn("[TERMINAL]: failed to write the clipboard", error);
+      });
     }
   };
 

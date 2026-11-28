@@ -72,6 +72,11 @@ runtime.
   an optional peer dependency (a hard dependency would download the Electron
   binary into every extension install). Add it as a `devDependency` for its
   types.
+- **Electron 44 removes `clipboard` from the renderer.** A renderer entrypoint
+  that imports `clipboard` from `electron` gets `undefined`. Use
+  `navigator.clipboard.writeText()` and `readText()` instead, which return
+  Promises. The main process keeps Electron's `clipboard`, whose read and
+  write methods also return Promises since Electron 44.
 
 ## React version (host-provided, must match majors)
 
