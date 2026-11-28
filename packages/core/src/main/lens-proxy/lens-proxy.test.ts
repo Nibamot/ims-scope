@@ -12,6 +12,7 @@ import routerInjectable from "../router/router.injectable";
 import getClusterForRequestInjectable from "./get-cluster-for-request.injectable";
 import lensProxyInjectable from "./lens-proxy.injectable";
 import lensProxyPortInjectable from "./lens-proxy-port.injectable";
+import lensProxyTokenInjectable from "./lens-proxy-token.injectable";
 import kubeApiUpgradeRequestInjectable from "./proxy-functions/kube-api-upgrade-request.injectable";
 import shellApiRequestInjectable from "./proxy-functions/shell-api-request.injectable";
 import type http from "node:http";
@@ -101,6 +102,8 @@ describe("closing the lens proxy", () => {
       routerInjectable,
       () =>
         ({
+          // Closing is under test here, not the token.
+          isServedWithoutToken: () => true,
           route: (_cluster: Cluster | undefined, req: ServerIncomingMessage, res: http.ServerResponse) => {
             if (req.url === answeredPath) {
               res.end();
@@ -183,15 +186,23 @@ describe("lens proxy upgrade requests", () => {
   let cluster: Cluster | undefined;
   let shellApiRequest: Mock;
   let kubeApiUpgradeRequest: Mock;
-  let socket: { destroy: Mock };
+  let socket: { destroy: Mock; end: Mock };
 
-  const upgrade = (url: string) => {
+  const validHeaders = () => ({
+    host: "127.0.0.1:1234",
+    authorization: `Bearer ${di.inject(lensProxyTokenInjectable).value}`,
+  });
+
+  const upgrade = (url: string, headers: http.IncomingHttpHeaders = validHeaders()) => {
     const proxy = di.inject(lensProxyInjectable);
     // The upgrade handler is what is under test, and it runs long before the
     // server is listening.
     const server = (proxy as unknown as { proxyServer: NodeJS.EventEmitter }).proxyServer;
+    const req = { url, method: "GET", headers } as ServerIncomingMessage;
 
-    server.emit("upgrade", { url, method: "GET", headers: {} } as ServerIncomingMessage, socket, Buffer.from([]));
+    server.emit("upgrade", req, socket, Buffer.from([]));
+
+    return req;
   };
 
   beforeEach(() => {
@@ -203,7 +214,7 @@ describe("lens proxy upgrade requests", () => {
     cluster = { id: "some-cluster-id" } as Cluster;
     shellApiRequest = vi.fn();
     kubeApiUpgradeRequest = vi.fn();
-    socket = { destroy: vi.fn() };
+    socket = { destroy: vi.fn(), end: vi.fn() };
 
     di.override(getClusterForRequestInjectable, () => () => cluster);
     di.override(shellApiRequestInjectable, () => shellApiRequest);
@@ -247,5 +258,157 @@ describe("lens proxy upgrade requests", () => {
       expect(kubeApiUpgradeRequest).not.toHaveBeenCalled();
       expect(shellApiRequest).not.toHaveBeenCalled();
     });
+  });
+
+  describe("the token", () => {
+    const expectRefused = () => {
+      expect(socket.end).toHaveBeenCalledWith(expect.stringMatching(/^HTTP\/1\.1 403 /));
+      expect(shellApiRequest).not.toHaveBeenCalled();
+      expect(kubeApiUpgradeRequest).not.toHaveBeenCalled();
+    };
+
+    it("refuses a shell upgrade without it", () => {
+      upgrade("/api?id=some-tab-id", { host: "127.0.0.1:1234" });
+
+      expectRefused();
+    });
+
+    it("refuses a kube api upgrade with a wrong one", () => {
+      upgrade("/api-kube/api/v1/namespaces/default/pods/some-pod/exec", {
+        host: "127.0.0.1:1234",
+        authorization: "Bearer some-wrong-token",
+      });
+
+      expectRefused();
+    });
+
+    it("refuses an upgrade for a foreign host, even with it", () => {
+      upgrade("/api?id=some-tab-id", { ...validHeaders(), host: "attacker.example:1234" });
+
+      expectRefused();
+    });
+
+    it("refuses an upgrade from a foreign origin, even with it", () => {
+      upgrade("/api?id=some-tab-id", { ...validHeaders(), origin: "https://attacker.example" });
+
+      expectRefused();
+    });
+
+    it("accepts it from the cookie of a frame, and strips it before going on", () => {
+      const req = upgrade("/api?id=some-tab-id", {
+        host: "some-cluster-id.renderer.ims-scope.app:1234",
+        origin: "https://some-cluster-id.renderer.ims-scope.app:1234",
+        cookie: `other=1; ims_scope_proxy_token=${di.inject(lensProxyTokenInjectable).value}`,
+      });
+
+      expect(shellApiRequest).toHaveBeenCalledTimes(1);
+      expect(req.headers.cookie).toBeUndefined();
+      expect(req.headers.authorization).toBeUndefined();
+    });
+  });
+});
+
+describe("lens proxy requests", () => {
+  let di: DiContainer;
+  let port: number;
+  let routed: http.IncomingHttpHeaders[];
+  let proxy: { listen: () => Promise<void>; close: () => Promise<void> | undefined };
+  const publicPath = "/some-renderer-file.js";
+
+  const get = async (path: string, headers: Record<string, string> = {}) => {
+    const socket = net.connect(port, "127.0.0.1");
+
+    await once(socket, "connect");
+
+    const head = Object.entries({ host: "127.0.0.1", ...headers })
+      .map(([name, value]) => `${name}: ${value}\r\n`)
+      .join("");
+
+    socket.write(`GET ${path} HTTP/1.1\r\n${head}Connection: close\r\n\r\n`);
+
+    let response = "";
+
+    for await (const chunk of socket) {
+      response += (chunk as Buffer).toString();
+    }
+
+    return Number(response.split(" ")[1]);
+  };
+
+  const bearer = () => ({ authorization: `Bearer ${di.inject(lensProxyTokenInjectable).value}` });
+
+  beforeEach(async () => {
+    di = getDiForUnitTesting();
+    routed = [];
+
+    di.override(directoryForUserDataInjectable, () => "/some-directory-for-user-data");
+    di.override(directoryForTempInjectable, () => "/some-directory-for-tmp");
+    di.override(getClusterForRequestInjectable, () => () => undefined);
+    di.override(shellApiRequestInjectable, () => vi.fn());
+    di.override(kubeApiUpgradeRequestInjectable, () => vi.fn());
+    di.override(
+      routerInjectable,
+      () =>
+        ({
+          isServedWithoutToken: (_method: string, url: string) => url === publicPath || url.startsWith("/api-kube"),
+          route: async (_cluster: Cluster | undefined, req: ServerIncomingMessage, res: http.ServerResponse) => {
+            routed.push({ ...req.headers });
+            res.end();
+
+            return true;
+          },
+        }) as unknown as Router,
+    );
+
+    proxy = di.inject(lensProxyInjectable);
+    await proxy.listen();
+    port = di.inject(lensProxyPortInjectable).get();
+  });
+
+  afterEach(async () => {
+    await proxy.close();
+  });
+
+  it("serves a route marked as public without it", async () => {
+    expect(await get(publicPath)).toBe(200);
+  });
+
+  it("refuses any other route without it, before the router", async () => {
+    expect(await get("/api/some-route")).toBe(403);
+    expect(routed).toHaveLength(0);
+  });
+
+  it("refuses a wrong one", async () => {
+    expect(await get("/api/some-route", { authorization: "Bearer some-wrong-token" })).toBe(403);
+  });
+
+  it("serves with it as a bearer token, and strips it before routing", async () => {
+    expect(await get("/api/some-route", bearer())).toBe(200);
+    expect(routed[0].authorization).toBeUndefined();
+  });
+
+  it("serves with it as the cookie of a frame", async () => {
+    const token = di.inject(lensProxyTokenInjectable).value;
+
+    expect(
+      await get("/api/some-route", {
+        host: "renderer.ims-scope.app:1234",
+        origin: "https://renderer.ims-scope.app:1234",
+        cookie: `ims_scope_proxy_token=${token}`,
+      }),
+    ).toBe(200);
+    expect(routed[0].cookie).toBeUndefined();
+  });
+
+  it("refuses a foreign host, even with it", async () => {
+    expect(await get("/api/some-route", { ...bearer(), host: "attacker.example" })).toBe(403);
+  });
+
+  it("refuses a foreign origin, even with it", async () => {
+    expect(await get("/api/some-route", { ...bearer(), origin: "https://attacker.example" })).toBe(403);
+  });
+
+  it("guards the kube api whatever the router says", async () => {
+    expect(await get("/api-kube/api/v1/pods")).toBe(403);
   });
 });

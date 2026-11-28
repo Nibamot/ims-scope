@@ -16,7 +16,11 @@ import type { ConnectionOptions } from "node:tls";
 
 import type { LensProxyApiRequest } from "../lens-proxy";
 
-const skipRawHeaders = new Set(["Host", "Authorization"]);
+// Compared in lower case. `host` is set from the cluster's API URL instead;
+// `authorization` and `cookie` carry the lens-proxy token, which must not travel
+// towards the cluster; `origin` is the frame's, which a gateway in front of a
+// cluster may refuse.
+const skipRawHeaders = new Set(["host", "authorization", "cookie", "origin"]);
 
 const kubeApiUpgradeRequestInjectable = getInjectable({
   id: "kube-api-upgrade-request",
@@ -41,7 +45,7 @@ const kubeApiUpgradeRequestInjectable = getInjectable({
         proxySocket.write(`Host: ${clusterApiUrl.host}\r\n`);
 
         for (const [key, value] of chunk(req.rawHeaders, 2)) {
-          if (skipRawHeaders.has(key)) {
+          if (skipRawHeaders.has(key.toLowerCase())) {
             continue;
           }
 

@@ -18,6 +18,7 @@ import setupHostnamesInjectable from "./setup-hostnames.injectable";
 import setupImmerInjectable from "./setup-immer.injectable";
 import setupLensProxyInjectable from "./setup-lens-proxy.injectable";
 import setupLensProxyCertificateInjectable from "./setup-lens-proxy-certificate.injectable";
+import setupLensProxyCredentialEnvInjectable from "./setup-lens-proxy-credential-env.injectable";
 import setupMobxInjectable from "./setup-mobx.injectable";
 import setupProxyEnvInjectable from "./setup-proxy-env.injectable";
 import setupSessionProxyBypassInjectable from "./setup-session-proxy-bypass.injectable";
@@ -65,6 +66,11 @@ export function registerInjectables(di: DiContainerForInjection): void {
   }
   try {
     di.register(setupLensProxyCertificateInjectable);
+  } catch (e) {
+    /* Ignore duplicate registration */
+  }
+  try {
+    di.register(setupLensProxyCredentialEnvInjectable);
   } catch (e) {
     /* Ignore duplicate registration */
   }

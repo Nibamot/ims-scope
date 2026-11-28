@@ -20,6 +20,7 @@ import { buildVersionInitializable } from "../../../features/vars/build-version/
 import loadProxyKubeconfigInjectable from "../../cluster/load-proxy-kubeconfig.injectable";
 import kubeconfigManagerInjectable from "../../kubeconfig-manager/kubeconfig-manager.injectable";
 import createKubectlInjectable from "../../kubectl/create-kubectl.injectable";
+import withLensProxyCredentialEnvInjectable from "../../lens-proxy/with-lens-proxy-credential-env.injectable";
 import shellSessionProcessesInjectable from "../processes.injectable";
 import { kubectlStatusOptionsFor, terminalStatusReporterFor } from "../send-terminal-status";
 import shellSessionEnvsInjectable from "../shell-envs.injectable";
@@ -59,6 +60,7 @@ const openNodeShellSessionInjectable = getInjectable({
       shellSessionProcesses: di.inject(shellSessionProcessesInjectable),
       createKubeJsonApiForCluster: di.inject(createKubeJsonApiForClusterInjectable),
       computeShellEnvironment: di.inject(computeShellEnvironmentInjectable),
+      withLensProxyCredentialEnv: di.inject(withLensProxyCredentialEnvInjectable),
       spawnPty: di.inject(spawnPtyInjectable),
       emitAppEvent: di.inject(emitAppEventInjectable),
       stat: di.inject(statInjectable),

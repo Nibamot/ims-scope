@@ -9,7 +9,9 @@ import http2 from "node:http2";
 import net from "node:net";
 import { apiKubePrefix, apiPrefix } from "../../common/vars";
 import { getBoolean } from "../utils/parse-query";
+import { hasAllowedHost, hasAllowedOrigin } from "./allowed-request";
 import { adaptUpstreamResponseForHttp2, normalizeHttp2Request } from "./http2-compat";
+import { stripToken, tokenFromHeaders } from "./lens-proxy-token";
 import type http from "node:http";
 
 import type { Logger } from "@nibamot/logger";
@@ -22,6 +24,7 @@ import type { SelfSignedCert } from "../../common/certificate/certificate";
 import type { Cluster } from "../../common/cluster/cluster";
 import type { KubeAuthProxyServer } from "../cluster/kube-auth-proxy-server.injectable";
 import type { Router } from "../router/router";
+import type { LensProxyToken } from "./lens-proxy-token.injectable";
 import type { ProxyApiRequestArgs, ShellApiRequestArgs } from "./proxy-functions";
 
 export type GetClusterForRequest = (req: http.IncomingMessage) => Cluster | undefined;
@@ -41,6 +44,7 @@ interface Dependencies {
   readonly contentSecurityPolicy: string;
   readonly logger: Logger;
   readonly certificate: SelfSignedCert;
+  readonly token: LensProxyToken;
 }
 
 const watchParam = "watch";
@@ -84,6 +88,12 @@ export class LensProxy {
    * `closeAllConnections` of its own.
    */
   protected readonly connections = new Set<net.Socket>();
+  /**
+   * Requests that passed the token check. The token is stripped once checked,
+   * so a request the proxy error handler hands back to `handleRequest` for a
+   * retry would otherwise fail it.
+   */
+  protected readonly authorizedRequests = new WeakSet<http.IncomingMessage>();
 
   constructor(private readonly dependencies: Dependencies) {
     this.configureProxy(dependencies.proxy);
@@ -115,6 +125,20 @@ export class LensProxy {
     });
 
     this.proxyServer.on("upgrade", (req: ServerIncomingMessage, socket: net.Socket, head: Buffer) => {
+      // A shell and the kube api are both reached through an upgrade, so it is
+      // refused before anything of it is read when it does not come from one of
+      // our clients.
+      const refusal = this.refusalOf(req);
+
+      if (refusal) {
+        this.dependencies.logger.warn(`[LENS-PROXY]: refused an upgrade: ${refusal}`, { url: req.url });
+        socket.end("HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n");
+
+        return;
+      }
+
+      stripToken(req.headers);
+
       /**
        * Decided before the cluster is looked up: an internal upgrade is a
        * shell request, and a shell can be opened outside of any cluster
@@ -303,11 +327,57 @@ export class LensProxy {
     return req.headers.host + req.url;
   }
 
+  /**
+   * Why a request is refused, or `undefined` when it may go on: it must be for
+   * a host we serve, come from no page or one of our frames, and carry the
+   * token.
+   */
+  protected refusalOf(req: ServerIncomingMessage): string | undefined {
+    if (!hasAllowedHost(req.headers)) {
+      return "foreign host";
+    }
+
+    if (!hasAllowedOrigin(req.headers)) {
+      return "foreign origin";
+    }
+
+    if (!this.dependencies.token.matches(tokenFromHeaders(req.headers))) {
+      return "missing or invalid token";
+    }
+
+    return undefined;
+  }
+
   protected async handleRequest(req: ServerIncomingMessage, res: http.ServerResponse) {
+    // Looked up first because it rewrites the `/<clusterId>/…` path of kubectl
+    // and helm to the kube api prefix, which is then guarded like any other.
     const cluster = this.dependencies.getClusterForRequest(req);
 
+    // Every request needs the token except one the router serves without it:
+    // the renderer's files and `/version`, which the window loads before the
+    // frames can carry it. The kube api never reaches the router.
+    if (
+      !this.authorizedRequests.has(req) &&
+      (req.url.startsWith(apiKubePrefix) || !this.dependencies.router.isServedWithoutToken(req.method, req.url))
+    ) {
+      const refusal = this.refusalOf(req);
+
+      if (refusal) {
+        this.dependencies.logger.warn(`[LENS-PROXY]: refused a request: ${refusal}`, { url: req.url });
+        res.writeHead(403, { "Content-Type": "text/plain" }).end("Forbidden");
+
+        return;
+      }
+
+      stripToken(req.headers);
+      this.authorizedRequests.add(req);
+    }
+
     if (cluster && req.url.startsWith(apiKubePrefix)) {
-      delete req.headers.authorization;
+      // The frame's `Origin` was checked above and means nothing to the
+      // cluster; a gateway in front of one may refuse an origin it does not
+      // know.
+      delete req.headers.origin;
       req.url = req.url.replace(apiKubePrefix, "");
 
       const kubeAuthProxyServer = this.dependencies.getKubeAuthProxyServer(cluster);
@@ -319,6 +389,8 @@ export class LensProxy {
     }
 
     res.setHeader("Content-Security-Policy", this.dependencies.contentSecurityPolicy);
-    await this.dependencies.router.route(cluster, req, res);
+    if (!(await this.dependencies.router.route(cluster, req, res))) {
+      res.writeHead(404, { "Content-Type": "text/plain" }).end("Not Found");
+    }
   }
 }

@@ -61,6 +61,11 @@ export interface RouteHandler<TResponse, Path extends string> {
 export interface BaseRoutePaths<Path extends string> {
   path: Path;
   method: "get" | "post" | "put" | "patch" | "delete";
+  /**
+   * Served without the lens-proxy token. Only for what the window loads before
+   * its frames can carry the token: the renderer's files and `/version`.
+   */
+  withoutToken?: boolean;
 }
 
 export interface PayloadValidator<Payload> {

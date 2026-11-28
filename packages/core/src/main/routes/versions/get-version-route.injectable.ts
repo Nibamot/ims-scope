@@ -15,6 +15,8 @@ const getVersionRouteInjectable = getRouteInjectable({
     route({
       method: "get",
       path: `/version`,
+      // Asked by the startup connection test, and reveals nothing.
+      withoutToken: true,
     })(() => ({
       response: {
         version: di.inject(buildVersionInitializable.stateToken),

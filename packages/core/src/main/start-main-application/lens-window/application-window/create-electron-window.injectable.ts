@@ -15,6 +15,7 @@ import isLinuxInjectable from "../../../../common/vars/is-linux.injectable";
 import lensResourcesDirInjectable from "../../../../common/vars/lens-resources-dir.injectable";
 import applicationWindowStateInjectable from "./application-window-state.injectable";
 import sessionCertificateVerifierInjectable from "./session-certificate-verifier.injectable";
+import setLensProxyTokenCookieInjectable from "./set-lens-proxy-token-cookie.injectable";
 
 import type { RequireExactlyOne } from "type-fest";
 
@@ -58,6 +59,7 @@ const createElectronWindowInjectable = getInjectable({
     const getAbsolutePath = di.inject(getAbsolutePathInjectable);
     const lensResourcesDir = di.inject(lensResourcesDirInjectable);
     const isLinux = di.inject(isLinuxInjectable);
+    const setLensProxyTokenCookie = di.inject(setLensProxyTokenCookieInjectable);
     const applicationInformation = di.inject(applicationInformationToken);
     const pathExistsSync = di.inject(pathExistsSyncInjectable);
     const sessionCertificateVerifier = di.inject(sessionCertificateVerifierInjectable);
@@ -159,6 +161,10 @@ const createElectronWindowInjectable = getInjectable({
 
         loadUrl: async (url) => {
           logger.info(`[CREATE-ELECTRON-WINDOW]: Loading content for window "${configuration.id}" from url: ${url}...`);
+
+          // Before the load, so the frames carry the token from their first
+          // request.
+          await setLensProxyTokenCookie(browserWindow.webContents.session);
 
           // Retry logic for handling firewall/proxy delays and connection issues
           const maxAttempts = 3;

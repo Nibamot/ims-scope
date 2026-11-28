@@ -22,6 +22,7 @@ import userShellSettingInjectable from "../../../features/user-preferences/commo
 import userPreferencesStateInjectable from "../../../features/user-preferences/common/state.injectable";
 import { buildVersionInitializable } from "../../../features/vars/build-version/common/token";
 import bundledKubectlBinaryPathInjectable from "../../kubectl/bundled-binary-path.injectable";
+import withLensProxyCredentialEnvInjectable from "../../lens-proxy/with-lens-proxy-credential-env.injectable";
 import { LocalShellSession } from "../local-shell-session/local-shell-session";
 import shellSessionProcessesInjectable from "../processes.injectable";
 import modifyTerminalShellEnvInjectable from "../shell-env-modifier/modify-terminal-shell-env.injectable";
@@ -79,6 +80,7 @@ const openStandaloneShellSessionInjectable = getInjectable({
       joinPaths: di.inject(joinPathsInjectable),
       getBasenameOfPath: di.inject(getBasenameOfPathInjectable),
       computeShellEnvironment: di.inject(computeShellEnvironmentInjectable),
+      withLensProxyCredentialEnv: di.inject(withLensProxyCredentialEnvInjectable),
       spawnPty: di.inject(spawnPtyInjectable),
       stat: di.inject(statInjectable),
     };

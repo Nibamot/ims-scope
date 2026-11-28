@@ -7,6 +7,7 @@
  */
 
 import createKubeAuthProxyInjectable from "./create-kube-auth-proxy.injectable";
+import freelensK8sProxyCredentialCommandInjectable from "./freelens-k8s-proxy-credential-command.injectable";
 import freeLensK8sProxyPathInjectable from "./freelens-k8s-proxy-path.injectable";
 import kubeAuthProxyCertificateInjectable from "./kube-auth-proxy-certificate.injectable";
 import { registerInjectables as registerWaitUntilPortIsUsedInjectables } from "./wait-until-port-is-used/register-injectables";
@@ -21,6 +22,11 @@ export function registerInjectables(di: DiContainerForInjection): void {
   }
   try {
     di.register(freeLensK8sProxyPathInjectable);
+  } catch (e) {
+    /* Ignore duplicate registration */
+  }
+  try {
+    di.register(freelensK8sProxyCredentialCommandInjectable);
   } catch (e) {
     /* Ignore duplicate registration */
   }

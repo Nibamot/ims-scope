@@ -301,3 +301,37 @@ describe("router", () => {
     });
   });
 });
+
+describe("router, which routes are served without the lens-proxy token", () => {
+  let router: Router;
+
+  beforeEach(() => {
+    const di = getDiForUnitTesting();
+
+    di.override(directoryForUserDataInjectable, () => "/some-directory-for-user-data");
+    di.override(kubectlBinaryNameInjectable, () => "kubectl");
+    di.override(kubectlDownloadingNormalizedArchInjectable, () => "amd64");
+    di.override(normalizedPlatformInjectable, () => "darwin");
+
+    router = di.inject(routerInjectable);
+  });
+
+  it.each([
+    ["the renderer's index", "/"],
+    ["a renderer file", "/build/some-chunk.js"],
+    ["the version", "/version"],
+  ])("serves %s without it", (_, path) => {
+    expect(router.isServedWithoutToken("GET", path)).toBe(true);
+  });
+
+  it.each([
+    ["an api route", "GET", "/api/v2/charts"],
+    ["an api path no route answers", "GET", "/api/some-unknown-route"],
+    ["a kube api path", "GET", "/api-kube/api/v1/pods"],
+    ["an api route spelled with a dot segment", "GET", "/./api/v2/charts"],
+    ["an api route spelled with a parent segment", "GET", "/build/../api/v2/charts"],
+    ["a method no route answers", "POST", "/some-renderer-file.js"],
+  ])("requires it for %s", (_, method, path) => {
+    expect(router.isServedWithoutToken(method, path)).toBe(false);
+  });
+});

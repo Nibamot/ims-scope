@@ -8,6 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { getOrInsertWith } from "@nibamot/utilities";
 import { TerminalChannels, type TerminalMessage } from "../../common/terminal/channels";
+import { lensProxyTokenEnvVar } from "../lens-proxy/lens-proxy-token";
 import { clearKubeconfigEnvVars } from "../utils/clear-kube-env-vars";
 import { type TerminalStatusReporter, terminalStatusReporterFor } from "./send-terminal-status";
 
@@ -22,6 +23,7 @@ import type { Cluster } from "../../common/cluster/cluster";
 import type { Stat } from "../../common/fs/stat.injectable";
 import type { ComputeShellEnvironment } from "../../features/shell-sync/main/compute-shell-environment.injectable";
 import type { Kubectl } from "../kubectl/kubectl";
+import type { WithLensProxyCredentialEnv } from "../lens-proxy/with-lens-proxy-credential-env.injectable";
 import type { ShellSessionProcesses } from "./processes.injectable";
 import type { ShellSessionEnvs } from "./shell-envs.injectable";
 import type { SpawnPty } from "./spawn-pty.injectable";
@@ -138,6 +140,7 @@ export interface ShellSessionDependencies {
   readonly shellSessionEnvs: ShellSessionEnvs;
   readonly shellSessionProcesses: ShellSessionProcesses;
   computeShellEnvironment: ComputeShellEnvironment;
+  withLensProxyCredentialEnv: WithLensProxyCredentialEnv;
   spawnPty: SpawnPty;
   emitAppEvent: EmitAppEvent;
   stat: Stat;
@@ -429,7 +432,7 @@ export abstract class ShellSession {
       env.PTYSHELL = shell || "powershell.exe";
       env.PATH = pathStr;
       env.LENS_SESSION = "true";
-      env.WSLENV = [env.WSLENV, "KUBECONFIG/up:LENS_SESSION/u"].filter(Boolean).join(":");
+      env.WSLENV = [env.WSLENV, `KUBECONFIG/up:LENS_SESSION/u:${lensProxyTokenEnvVar}/u`].filter(Boolean).join(":");
     } else if (shell !== undefined) {
       env.PTYSHELL = shell;
       env.PATH = pathStr;
@@ -463,7 +466,10 @@ export abstract class ShellSession {
 
     env.NO_PROXY = ["localhost", "127.0.0.1", env.NO_PROXY].filter(Boolean).join();
 
-    return env;
+    // The environment comes from the user's login shell, not from the main
+    // process, so the proxy kubeconfig's `credential` plugin needs its token
+    // added here.
+    return proxyKubeconfigPath === undefined ? env : this.dependencies.withLensProxyCredentialEnv(env);
   }
 
   protected exit(code = WebSocketCloseEvent.NormalClosure) {
