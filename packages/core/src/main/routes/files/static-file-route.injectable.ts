@@ -19,6 +19,8 @@ const staticFileRouteInjectable = getRouteInjectable({
     return route({
       method: "get",
       path: `/{path*}`,
+      // The window loads the renderer before its frames have the token.
+      withoutToken: true,
     })(
       isDevelopment ? di.inject(devStaticFileRouteHandlerInjectable) : di.inject(prodStaticFileRouteHandlerInjectable),
     );

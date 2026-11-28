@@ -16,6 +16,7 @@ import getDirnameOfPathInjectable from "../../common/path/get-dirname.injectable
 import joinPathsInjectable from "../../common/path/join-paths.injectable";
 import kubeAuthProxyUrlInjectable from "../cluster/auth-proxy-url.injectable";
 import kubeAuthProxyServerInjectable from "../cluster/kube-auth-proxy-server.injectable";
+import freelensK8sProxyCredentialCommandInjectable from "../kube-auth-proxy/freelens-k8s-proxy-credential-command.injectable";
 import { KubeconfigManager } from "./kubeconfig-manager";
 
 import type { Cluster } from "../../common/cluster/cluster";
@@ -37,6 +38,7 @@ const kubeconfigManagerInjectable = getInjectable({
         loadKubeconfig: di.inject(loadKubeconfigInjectable, cluster),
         kubeAuthProxyServer: di.inject(kubeAuthProxyServerInjectable, cluster),
         kubeAuthProxyUrl: di.inject(kubeAuthProxyUrlInjectable, cluster),
+        credentialCommand: di.inject(freelensK8sProxyCredentialCommandInjectable),
       },
       cluster,
     ),

@@ -28,6 +28,8 @@ interface KubeconfigManagerDependencies {
   readonly certificate: SelfSignedCert;
   readonly kubeAuthProxyServer: KubeAuthProxyServer;
   readonly kubeAuthProxyUrl: string;
+  /** The `command` of the credential plugin: a path, or a name found on `PATH`. */
+  readonly credentialCommand: string;
   joinPaths: JoinPaths;
   getDirnameOfPath: GetDirnameOfPath;
   pathExists: PathExists;
@@ -115,7 +117,21 @@ export class KubeconfigManager {
           caData: Buffer.from(this.dependencies.certificate.cert).toString("base64"),
         },
       ],
-      users: [{ name: "proxy", username: "lens", password: "fake" }],
+      // The token is not in the file: the `credential` subcommand of
+      // freelens-k8s-proxy reads it from FREELENS_PROXY_TOKEN, which is in the
+      // environment of every tool started against the proxy. A request without
+      // it gets 403.
+      users: [
+        {
+          name: "proxy",
+          exec: {
+            apiVersion: "client.authentication.k8s.io/v1",
+            command: this.dependencies.credentialCommand,
+            args: ["credential"],
+            interactiveMode: "Never",
+          },
+        },
+      ],
       contexts: [
         {
           user: "proxy",
@@ -129,9 +145,8 @@ export class KubeconfigManager {
     const configYaml = dumpConfigYaml(proxyConfig);
 
     await this.dependencies.writeFile(tempFile, configYaml, { mode: 0o600 });
-    this.dependencies.logger.debug(
-      `[KUBECONFIG-MANAGER]: Created temp kubeconfig "${contextName}" at "${tempFile}": \n${configYaml}`,
-    );
+    // Only the path: main.log is what users attach to bug reports.
+    this.dependencies.logger.debug(`[KUBECONFIG-MANAGER]: Created temp kubeconfig "${contextName}" at "${tempFile}"`);
 
     return tempFile;
   }

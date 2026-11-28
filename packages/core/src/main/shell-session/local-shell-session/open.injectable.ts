@@ -23,6 +23,7 @@ import userPreferencesStateInjectable from "../../../features/user-preferences/c
 import { buildVersionInitializable } from "../../../features/vars/build-version/common/token";
 import kubeconfigManagerInjectable from "../../kubeconfig-manager/kubeconfig-manager.injectable";
 import createKubectlInjectable from "../../kubectl/create-kubectl.injectable";
+import withLensProxyCredentialEnvInjectable from "../../lens-proxy/with-lens-proxy-credential-env.injectable";
 import shellSessionProcessesInjectable from "../processes.injectable";
 import { kubectlStatusOptionsFor, terminalStatusReporterFor } from "../send-terminal-status";
 import modifyTerminalShellEnvInjectable from "../shell-env-modifier/modify-terminal-shell-env.injectable";
@@ -67,6 +68,7 @@ const openLocalShellSessionInjectable = getInjectable({
       joinPaths: di.inject(joinPathsInjectable),
       getBasenameOfPath: di.inject(getBasenameOfPathInjectable),
       computeShellEnvironment: di.inject(computeShellEnvironmentInjectable),
+      withLensProxyCredentialEnv: di.inject(withLensProxyCredentialEnvInjectable),
       spawnPty: di.inject(spawnPtyInjectable),
       stat: di.inject(statInjectable),
     };

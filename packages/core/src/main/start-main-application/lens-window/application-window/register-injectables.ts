@@ -13,6 +13,7 @@ import createFirstApplicationWindowInjectable from "./create-first-application-w
 import createLensWindowInjectable from "./create-lens-window.injectable";
 import getCurrentApplicationWindowInjectable from "./get-current-application-window.injectable";
 import sessionCertificateVerifierInjectable from "./session-certificate-verifier.injectable";
+import setLensProxyTokenCookieInjectable from "./set-lens-proxy-token-cookie.injectable";
 import waitUntilBundledExtensionsAreLoadedInjectable from "./wait-until-bundled-extensions-are-loaded.injectable";
 
 import type { DiContainerForInjection } from "@ogre-tools/injectable";
@@ -50,6 +51,11 @@ export function registerInjectables(di: DiContainerForInjection): void {
   }
   try {
     di.register(sessionCertificateVerifierInjectable);
+  } catch (e) {
+    /* Ignore duplicate registration */
+  }
+  try {
+    di.register(setLensProxyTokenCookieInjectable);
   } catch (e) {
     /* Ignore duplicate registration */
   }

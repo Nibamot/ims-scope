@@ -11,7 +11,9 @@ import getClusterForRequestInjectable from "./get-cluster-for-request.injectable
 import lensProxyInjectable from "./lens-proxy.injectable";
 import lensProxyCertificateRequestHandlerInjectable from "./lens-proxy-certificate-request-handler.injectable";
 import lensProxyPortInjectable from "./lens-proxy-port.injectable";
+import lensProxyTokenInjectable from "./lens-proxy-token.injectable";
 import { registerInjectables as registerProxyFunctionsInjectables } from "./proxy-functions/register-injectables";
+import withLensProxyCredentialEnvInjectable from "./with-lens-proxy-credential-env.injectable";
 
 import type { DiContainerForInjection } from "@ogre-tools/injectable";
 
@@ -38,6 +40,16 @@ export function registerInjectables(di: DiContainerForInjection): void {
   }
   try {
     di.register(lensProxyPortInjectable);
+  } catch (e) {
+    /* Ignore duplicate registration */
+  }
+  try {
+    di.register(lensProxyTokenInjectable);
+  } catch (e) {
+    /* Ignore duplicate registration */
+  }
+  try {
+    di.register(withLensProxyCredentialEnvInjectable);
   } catch (e) {
     /* Ignore duplicate registration */
   }
